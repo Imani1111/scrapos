@@ -10,7 +10,8 @@ uint8_t inode_table[INODES * 128];
 
 dirent_t temp_dir_buf[MAX_DIR_ENTRIES];
 cwd_cache current_dir_cache;
-uint8_t cwd_path[1024] = {0};
+char cwd_path[1024] = {0};
+int path_ptr = 0;
 
 void init_fs()
 {
@@ -50,6 +51,9 @@ void init_fs()
 	
 	inode_t* root_dir = (inode_t*)inode_table;
 	cache_dir(root_dir);
+	kstrcpy(&cwd_path[path_ptr], "C:");
+	path_ptr += kstrlen("C:");
+	cwd_path[path_ptr] = '>';
 
 	dskrs2(inode_bitmap, inodebm);
 	print_string("Everything still works!\n", 0x00ff);
@@ -235,8 +239,9 @@ void grab_dir(inode_t* dir)
 	}
 }
 
-inode_t* resolve_path(char* path)
+inode_t* resolve_dir_path(char* path)
 {
+	if (*path == '\0') return ENTRY_NOT_FOUND;
 	char* tokens[MAX_TOKENS];
 	int tc = kstrtok('/', path, tokens, MAX_TOKENS);
 	int found;
@@ -296,7 +301,7 @@ inode_t* resolve_path(char* path)
 				break;
 			}
 		}
-		if (!found) return (inode_t*)-1;
+		if (!found) return ENTRY_NOT_FOUND;
 	}
 	return target;
 }
@@ -313,4 +318,50 @@ int fd_dir(const char* name)
 		i++;
 	}
 	return -1;
+}
+
+int cd(char* path)
+{
+	inode_t* dir = resolve_dir_path(path);
+	if (dir == ENTRY_NOT_FOUND) return -1;
+	cache_dir(dir);
+
+	int is_curr_dir;
+	char* ptr = path;
+	while (*ptr){
+		if (*ptr == '.'){
+			if (*(ptr + 1) == '.'){
+				is_curr_dir = 0;
+				ptr += 2;
+				break;
+			}else{
+				is_curr_dir = 1;
+				ptr++;
+				break;
+			}
+		}
+	}
+	if (is_curr_dir){
+		kstrcpy(&cwd_path[path_ptr], ptr);
+		path_ptr += kstrlen(ptr);
+		cwd_path[path_ptr] = '>';
+	}else{
+		char* dirs[10];
+		int dir_level = kstrtok('/', cwd_path, dirs, 10);
+		if (dir_level == 1) return -1;
+
+		while (cwd_path[path_ptr] && cwd_path[path_ptr] != '/'){
+			cwd_path[path_ptr] = '\0';
+			path_ptr--;
+		}
+		kstrcpy(&cwd_path[path_ptr], ptr);
+		path_ptr += kstrlen(ptr);
+		cwd_path[path_ptr] = '>';
+	}
+	return 0;
+}
+
+void print_shell_prompt()
+{
+	print_string(cwd_path, 0x00ff);
 }

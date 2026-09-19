@@ -30,12 +30,6 @@ void kernel_main()
 	print_string(disp, 0xff);
 	print_string("\n\n", 0);	
 	
-	create_entry("Projects", ATTR_DIRECTORY);
-
-	inode_t* i = resolve_path("./Projects");
-	char buf[5];
-	itoa(i->inode_no, buf);
-	print_string(buf, 0x00ff);
 	//init_multitasking();
 	//SpawnTask(InitDesktop, "Desktop");
 		
@@ -43,6 +37,17 @@ void kernel_main()
 	init_idt();
 	send_byte_to_port(0x21, 0b11111100); // Unmask PIT(bit 0) and Keyboard(bit 1)
 	
-	while(1);
+	//shell_main();	
+	print_shell_prompt();
+	while(1){
+		char c = read_key();
+		if (c == '\n'){
+			draw_char(c, 0);
+			print_shell_prompt();
+		}
+		else {
+			draw_char(c, 0x0);
+		}
+	}
 }
 

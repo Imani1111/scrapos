@@ -67,7 +67,7 @@ void read_rtc()
 	systime.day = ((systime.day >> 4) * 10) + (systime.day & 0xF);
 	systime.month = ((systime.month >> 4) * 10) + (systime.month & 0xF);
 	systime.year = (uint8_t)(CURRENT_YEAR - 2000);
-	print_string("rtc read successfully......\n", 0x0000ff00);
+	print_string("rtc read successfully......\n", 0x00ff);
 }
 
 realtime_t* get_current_timestamp()

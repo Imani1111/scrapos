@@ -315,6 +315,13 @@ void set_cursor_bounds(int minx, int maxx, int miny, int maxy){
 	cursor_bounds.max_y = maxy;
 }
 
+void reset_cursor_bounds(){
+	cursor_bounds.min_x = 0;
+	cursor_bounds.max_x = 640;
+	cursor_bounds.min_y = 0;
+	cursor_bounds.max_y = 480;
+}
+
 void store_cursor_attributes(Cursor_bounds* c, cursor_pos_t* cpos)
 {
 	c->min_x = cursor_bounds.min_x;

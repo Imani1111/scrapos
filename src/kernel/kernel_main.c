@@ -17,8 +17,8 @@ extern uint32_t first_allocatable_addr;
 void app_launcher(void)
 {
 	Window_t* win = open_window(24, 40, 320, 200, 0x0, 0x00ff, "APPLAUNCHER");
-	set_cursor_bounds(32, 320, 48, 240);
 	set_cursor(32, 56);
+	set_cursor_bounds(32, 320, 48, 240);
 
 	print_string(">>", 0x0000ff00);
 	char buf[32] = {0};
@@ -57,8 +57,8 @@ void kernel_main()
 {
 	asm volatile("cli");
 	clear_screen(0x00ffffff);
-	set_cursor_bounds(0, 640, 0, 480);
-		
+	reset_cursor_bounds();
+
 	init_fs();
 	init_pmm();
 	init_vmm();

@@ -16,9 +16,10 @@ char buf[256];
 void shell_main()
 {	
 	Window_t* win = open_window(100, 80, 400, 300, 0x00A9A9A9, 0x000000ff, "Shell");
-
-	set_cursor_bounds(108, 492, 88, 372);
+	reset_cursor_bounds();	
 	set_cursor(108, 96);
+	set_cursor_bounds(108, 492, 96, 372);
+
 	print_shell_prompt();
 	int ptr = 0;
 	while (1){

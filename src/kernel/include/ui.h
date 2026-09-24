@@ -37,6 +37,8 @@ typedef struct Window{
 	uint8_t vault[SIZE_OF_MAX_WINDOW];
 	int win_idx;
 	int winspace;
+	Cursor_bounds cb;
+	cursor_pos_t cpos;
 }Window_t;
 
 extern Window_t windows[MAX_WINDOW_DEPTH];

@@ -234,14 +234,9 @@ void init_directory(inode_t* direntry)
 int create_entry(const char* name, uint32_t attributes)
 {
 	inode_t* inodes = (inode_t*)inode_table;
-	char buf[4];
 
 	int i = find_free_dir_slot();
 	if (i == -1) return -1;
-
-	itoa(i, buf);
-	print_string(buf, 0x00ff0000);
-	draw_char('\n', 0);
 
 	if (i >= (int)(current_dir_cache.active_extents * 16)){
 		inode_t* parent_dir = &inodes[current_dir_cache.dir_inode_no];
@@ -251,10 +246,6 @@ int create_entry(const char* name, uint32_t attributes)
 	int j = fdi();
 	if (j == -1) return FS_FULL;
 	iuse(j);
-
-	itoa(j, buf);
-	print_string(buf, 0x00ff0000);
-	draw_char('\n', 0);
 
 	inode_t* new_entry_inode = &inodes[j];
 	populate_inode_metadata(new_entry_inode, j, attributes);
@@ -396,16 +387,8 @@ inode_t* resolve_dir_path(char* path)
 */
 int cd(char* path)
 {
-	char buf[32] = {0};
 	inode_t* dir = fd_dir(path);
 	if (dir == ENTRY_NOT_FOUND) return -1;
-
-	itoa(dir->inode_no, buf);
-	print_string(buf, 0x00ff0000);
-	draw_char('\n', 0);
-	itoa(dir->exts[0].physical_block, buf);
-	print_string(buf, 0x00ff0000);
-	print_string("\n", 0);
 	if (cache_dir(dir) == -1) return -1;
 	
 	update_cwd_str(path);
@@ -419,6 +402,7 @@ void ls(void)
 	int total_entries = 0;
 	inode_t* inode_base = (inode_t*)inode_table;
 	char buf[32];
+	char timebuf[20];
 	while (i < MAX_DIR_ENTRIES){
 		if (ptr->name[0] == '\0'){
 			i++;
@@ -427,12 +411,24 @@ void ls(void)
 		}
 		inode_t* curr = &inode_base[ptr->inode_no];
 		if (curr->attributes & ATTR_DIRECTORY){
-			print_string("DIR ", TOS_COLOR_RED);
+			print_string("DIR  ", TOS_COLOR_RED);
 		}else{
 			print_string("FILE ", 0x00ff1dce);
 		}
 		print_string(ptr->name, 0x00ff);
-		print_string("    ", 0x0);
+		print_string(" ", 0x0);
+
+		realtime_t time;
+		time.second = curr->ctime & 0xFF;
+		time.minute = (curr->ctime >> 8) & 0xFF;
+		time.hour = (curr->ctime >> 16) & 0xFF;
+		time.day = (curr->ctime >> 24) & 0xFF;
+		time.month = (curr->ctime >> 32) & 0xFF;
+		time.year = (curr->ctime >> 40) & 0xFF;
+
+		format_time(&time, timebuf);
+		print_string(timebuf, 0x00ff);
+		print_string(" ", 0);
 		itoa(curr->file_size, buf);
 		print_string(buf, TOS_COLOR_RED);
 		print_string("Bytes", 0x00228b22);

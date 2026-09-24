@@ -77,6 +77,7 @@ Window_t* create_window(uint32_t x, uint32_t y, uint16_t width, uint16_t height,
 			windows[i].fc = frame_color;
 			windows[i].win_idx = i;
 			windows[i].winspace = OCCUPIED;
+			store_cursor_attributes(&windows[i].cb, &windows[i].cpos);
 
 			z_order[z_count++] = i;
 			return (&windows[i]);	
@@ -138,7 +139,7 @@ Window_t* open_window(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint32_t b
 		asm volatile("sti");
 		return NULL;;
 	}
-	
+
 	take_snapshot(win);
 	draw_window(win);
 	focus_window(win);
@@ -201,19 +202,9 @@ void close_window(Window_t* win)
 	z_count--;
 	focus_window(&windows[z_order[z_count - 1]]);
 	//draw_reordered();
+	restore_cursor(&win->cb, &win->cpos);
 	kmemset((void*)win, 0, sizeof(Window_t));
 	asm volatile("sti");
-}
-
-void test(){
-	Window_t* win = open_window(150, 100, 200, 100, 0x00000000, 0x00ffffff, "TEST");
-	while(1){
-		char c = read_key();
-		if (c == 27){
-			close_window(win);
-			KillTask(NULL);
-		}
-	}
 }
 
 void start_menu()

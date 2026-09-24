@@ -14,16 +14,11 @@ char* cmd_toks[64];
 char buf[256];
 
 void shell_main()
-{
-	set_task_state(1, TASK_BLOCKED);
-	Cursor_bounds cb;
-	cursor_pos_t cpos;
-	store_cursor_attributes(&cb, &cpos);
+{	
+	Window_t* win = open_window(100, 80, 400, 300, 0x00A9A9A9, 0x000000ff, "Shell");
 
-	set_cursor_bounds(100, 500, 80, 380);
+	set_cursor_bounds(108, 492, 88, 372);
 	set_cursor(108, 96);
-		
-	Window_t* win = open_window(100, 80, 400, 300, 0x00ffffff, 0x000000ff, "Shell");
 	print_shell_prompt();
 	int ptr = 0;
 	while (1){
@@ -69,8 +64,7 @@ void shell_main()
 						}
 					}else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"exit") == 0){
 						close_window(win);
-						set_task_state(1, TASK_READY);
-						restore_cursor(&cb, &cpos);
+						awake_parent(NULL);
 						KillTask(NULL);
 					}
 					kmemset((uint8_t*)cmd_toks, 0, sizeof(char*) * 64);

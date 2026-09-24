@@ -46,7 +46,7 @@ void draw_cursor(void);
 void toggle_cursor(uint32_t x, uint32_t y);
 void move_cursor(int horizontal, int vertical);
 void cursor_blink(void);
-void set_cursor(uint32_t x, uint32_t y);
+void set_cursor(int x, int y);
 void draw_pixel(uint32_t x, uint32_t y, uint32_t color);
 void set_cursor_bounds(int minx, int maxx, int miny, int maxy);
 void store_cursor_attributes(Cursor_bounds* c, cursor_pos_t* cpos);

@@ -259,42 +259,26 @@ void move_cursor(int horizontal, int vertical){
 	
 	if (cursor_x_next < cursor_bounds.min_x || cursor_x_next >= cursor_bounds.max_x ||
 		       	cursor_y_next < cursor_bounds.min_y || cursor_y_next >=cursor_bounds.max_y){
+		cursor_busy = 0;
 		return;
 	}
 
 	if (cursor_visible){
 		toggle_cursor(cursor_x, cursor_y);
+		cursor_visible = 0;
 	}
 	
 	cursor_x += (horizontal * 8);
 	cursor_y += (vertical * 8);
 
-	if (cursor_visible){
-		toggle_cursor(cursor_x, cursor_y);
-	}
+	//if (cursor_visible) toggle_cursor(cursor_x, cursor_y);
 	cursor_busy = 0;
 }
 
-void set_cursor(uint32_t x, uint32_t y){
-	cursor_busy = 1;
-
-	/*if (x < cursor_bounds.min_x || x >= cursor_bounds.max_x ||
-		       	y < cursor_bounds.min_y || y >= cursor_bounds.max_y){
-		return;
-	}*/
-	/*
-	if (cursor_visible){
-		toggle_cursor(cursor_x, cursor_y);
-	}
-	*/
-	cursor_x = x;
-	cursor_y = y;
-	/*
-	if (cursor_visible){
-		toggle_cursor(cursor_x, cursor_y);
-	}
-	*/
-	cursor_busy = 0;
+void set_cursor(int x, int y){
+	int relx = (x - cursor_x) / 8;
+	int rely = (y - cursor_y) / 8;
+	move_cursor(relx, rely);
 }
 
 void cursor_blink(){
@@ -305,8 +289,8 @@ void cursor_blink(){
 			toggle_cursor(cursor_x, cursor_y);
 			cursor_visible = 0;
 		}else{
-			toggle_cursor(cursor_x, cursor_y);
 			cursor_visible = 1;
+			toggle_cursor(cursor_x, cursor_y);
 		}
 	}
 }

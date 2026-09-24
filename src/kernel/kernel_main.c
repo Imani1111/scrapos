@@ -16,7 +16,11 @@ extern uint32_t first_allocatable_addr;
 
 void app_launcher(void)
 {
-	print_string("~AppLauncher=>", 0x008B00FF);
+	Window_t* win = open_window(24, 40, 320, 200, 0x0, 0x00ff, "APPLAUNCHER");
+	set_cursor_bounds(32, 320, 48, 240);
+	set_cursor(32, 56);
+
+	print_string(">>", 0x0000ff00);
 	char buf[32] = {0};
 	int i = 0;
 	while(1){
@@ -26,18 +30,23 @@ void app_launcher(void)
 				case '\n':
 				     	draw_char(c, 0);
 					if (kstrcmp((uint8_t*)buf, (uint8_t*)"shell") == 0){
-						SpawnTask(shell_main, "Shell");
+						TaskControlBlock_t* shell = SpawnTask(shell_main, "Shell");
+						if (shell == TASK_CREAT_FAILED){
+							print_string("Task creation failed!\n", 0x00ff0000);
+						}else{
+							set_task_state(-1, TASK_BLOCKED);
+						}
 					}
 					i = 0;
 					kmemset(buf, 0, sizeof(buf));
-					print_string("~AppLauncher=>", 0x008B00FF);
+					print_string(">>", 0x0000ff00);
 					break;
 				case '\b':
 					if (i == 0) continue;
 					break;
 				default:
 					if (i > 31) continue;
-					draw_char(c, 0x0);
+					draw_char(c, 0x00ffffff);
 					buf[i++] = c;
 					break;
 			}

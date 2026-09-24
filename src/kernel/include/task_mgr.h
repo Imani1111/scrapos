@@ -12,6 +12,7 @@ typedef unsigned long long uint64_t;
 #define BOOT_STACK_BASE 0x200000
 #define EFLAGS 0x202
 
+#define TASK_CREAT_FAILED ((TaskControlBlock_t*)-1)
 typedef enum {
 	TASK_RUNNING,
 	TASK_READY,
@@ -27,7 +28,9 @@ typedef struct TaskControlBlock {
 	int pid;
 	char name[32];
 	TaskState state;
-	int waiting_on_pid;
+	int parent_pid;
+	int children[16];
+	int child_count;
 }TaskControlBlock_t;
 
 extern TaskControlBlock_t* head_task;
@@ -41,5 +44,5 @@ TaskControlBlock_t* SpawnTask(void(*entry_function)(void), const char* name);
 uint32_t Schedule(uint32_t current_esp);
 void KillTask(TaskControlBlock_t* task);
 void set_task_state(int pid, TaskState state);
-
+void awake_parent(TaskControlBlock_t* task);
 #endif

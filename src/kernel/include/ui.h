@@ -6,6 +6,8 @@ typedef unsigned short uint16_t;
 typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 
+#include <screen.h>
+
 #define TOS_COLOR_BLUE      0x0000AA  
 #define TOS_COLOR_CYAN      0x00AAAA  
 #define TOS_COLOR_WHITE     0xFFFFFF  
@@ -54,5 +56,5 @@ void draw_reordered(void);
 void focus_window(Window_t* win);
 void cycle_win();
 void InitDesktop(void);
-
+void start_menu(void);
 #endif

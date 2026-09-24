@@ -62,7 +62,7 @@ int main()
 	inode_table[0].inode_no = 0;
 	inode_table[0].file_size = 512;
 	uint16_t entry_count = 1;
-	inode_table[0].attributes = ATTR_DIRECTORY | ATTR_READABLE | ATTR_WRITABLE | (entry_count << 16);
+	inode_table[0].attributes = ATTR_DIRECTORY | ATTR_READABLE | ATTR_WRITABLE;
 	inode_table[0].ctime = 0;
 	inode_table[0].mtime = 0;
 	inode_table[0].active_extents = 1;

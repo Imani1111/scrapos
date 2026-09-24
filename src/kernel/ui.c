@@ -218,6 +218,10 @@ void test(){
 
 void start_menu()
 {
+	cursor_pos_t cpos;
+	Cursor_bounds cb;
+	store_cursor_attributes(&cb, &cpos);
+
 	set_task_state(1, TASK_BLOCKED);
 	Window_t* win = open_window(0, 380, 200, 70, TOS_COLOR_DARK_GRAY, TOS_COLOR_YELLOW, "START");
 	draw_rect(16, 410, 168, 24, 0x00ffffff);
@@ -237,6 +241,7 @@ void start_menu()
 		if (c == 27){
 			set_task_state(1, TASK_READY);
 			close_window(win);
+			restore_cursor(&cb, &cpos);
 			draw_rect(8, 458, 40, 14, TOS_COLOR_YELLOW);
 			print_string_at("START", 10, 461, TOS_COLOR_BLUE);
 			KillTask(NULL);	

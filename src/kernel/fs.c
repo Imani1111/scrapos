@@ -3,6 +3,7 @@
 #include <screen.h>
 #include <string.h>
 #include <rtc.h>
+#include <ui.h>
 
 uint8_t b[BITMAP];
 uint8_t inodebm[512];
@@ -59,24 +60,28 @@ void init_fs()
 	print_string("Everything still works!\n", 0x00ff);
 }
 
-void cache_dir(inode_t* dir)
+int cache_dir(inode_t* dir)
 {
-	if (!(dir->attributes & ATTR_DIRECTORY)) return;
+	if (!(dir->attributes & ATTR_DIRECTORY)) return -1;
 
 	current_dir_cache.active_extents = dir->active_extents;
 	current_dir_cache.dir_inode_no = dir->inode_no;
 
 	int curr_ext_lba;
 	uint8_t ext_block[512];
+
 	for (int i = 0; i < (int)current_dir_cache.active_extents; i++){
 		curr_ext_lba = dir->exts[i].physical_block;
 		dskrs2(curr_ext_lba, ext_block);
+
 		dirent_t* dirents = (dirent_t*)ext_block;
-		dirent_t* tc = current_dir_cache.entries;
-		for (int j = 0; j < (int)(512 / sizeof(dirent_t)); j++){
+		dirent_t* tc = current_dir_cache.entries + (i * 16);
+
+		for (int j = 0; j < 16; j++){
 			*tc++ = dirents[j];
 		}
 	}
+	return 0;
 }
 
 void use(int n){
@@ -143,49 +148,51 @@ int fdi()
 	return -1;
 }
 
-int create_entry(const char* name, uint32_t attributes)
+void add_exts(inode_t* entry, int ext_count)
 {
-	int inode_no = fdi();
-	if (!inode_no) return FS_FULL;
-	inode_t* inodes = (inode_t*)inode_table;
-	inode_t* new_dir = &inodes[inode_no];
+	for (int i = 0; i < ext_count; i++){
+		uint32_t new = fds();
+		use(new);
+		if (new == (entry->exts[entry->active_extents - 1].physical_block + entry->exts[entry->active_extents - 1].length)){
+			entry->exts[entry->active_extents - 1].length += 1;
+		}
+		else{
+			uint32_t old_extents = entry->active_extents;
+			entry->active_extents++;
+			current_dir_cache.active_extents++;
 
-	dirent_t* dir_entries = current_dir_cache.entries;
-	int parent_dir_inode_no = dir_entries->inode_no;
+			extent_t new_ext;
+			new_ext.physical_block = new;
+			new_ext.logical_block = old_extents;
+			new_ext.length = 1;
+			entry->exts[entry->active_extents - 1] = new_ext;
+		}
+	}
+}
+
+int find_free_dir_slot()
+{
+	dirent_t* temp = current_dir_cache.entries;
+	int i = 2;
 	int found = 0;
-	uint32_t active_extents = current_dir_cache.active_extents;
-	dirent_t* new_dir_entry = &dir_entries[2];
-	uint32_t i = 3;
 	while (i < MAX_DIR_ENTRIES){
-		if (new_dir_entry->name[0] == '\0'){
+		if (temp[i].name[0] == '\0'){
 			found = 1;
 			break;
 		}
-		new_dir_entry++;
 		i++;
 	}
 	if (!found) return DIR_FULL;
+	return i;
+}
 
-	if (i > (active_extents * 16)){
-		uint32_t new_extent = fds();
-		inode_t* parent = &inodes[current_dir_cache.dir_inode_no];
+void populate_inode_metadata(inode_t* inode, uint32_t inode_no, uint32_t attributes)
+{
+	inode->inode_no = inode_no;
+	inode->attributes = attributes;
+	inode->active_extents = 0;
+	inode->file_size = 0;
 
-		if (new_extent == (parent->exts[active_extents - 1].physical_block + parent->exts[active_extents - 1].length)){
-			parent->exts[active_extents - 1].length += 1;
-		}else{
-			parent->active_extents += 1;
-			extent_t new;
-			new.physical_block = new_extent;
-			new.logical_block = active_extents;
-			new.length = 1;
-			parent->exts[active_extents] = new;
-			use(new_extent);
-		}
-	}
-
-	new_dir->inode_no = inode_no;
-	new_dir->file_size = 0;
-	new_dir->attributes = attributes;
 	realtime_t* time = get_current_timestamp();
 	uint64_t second = (uint64_t)time->second;
 	uint64_t minute = (uint64_t)time->minute << 8;
@@ -193,23 +200,71 @@ int create_entry(const char* name, uint32_t attributes)
 	uint64_t day = (uint64_t)time->day << 24;
 	uint64_t month = (uint64_t)time->month << 32;
 	uint64_t year = (uint64_t)time->year << 40;
-	new_dir->ctime = second | minute | hour | day | month | year;
-	new_dir->mtime = new_dir->ctime;
-	new_dir->active_extents = 0;
+	
+	inode->ctime = second | minute | hour | day | month | year;
+	inode->mtime = inode->ctime;
+}
 
-	kstrcpy(new_dir_entry->name, name);
-	new_dir_entry->inode_no = inode_no;
+void init_directory(inode_t* direntry)
+{
+	if (!(direntry->attributes & ATTR_DIRECTORY)) return;
+	int new_ext = fds();
+	use(new_ext);
 
-	if (attributes & ATTR_DIRECTORY){
-		grab_dir(new_dir);
-		dirent_t* direntries = temp_dir_buf;
-		char* names = ".";
-		kmemcpy(direntries->name, names, kstrlen(names));
-		direntries->inode_no = inode_no;
-		names = "..";
-		kmemcpy((direntries + 1)->name, names, kstrlen(names));
-		(direntries + 1)->inode_no = parent_dir_inode_no;
+	extent_t e;
+	e.physical_block = new_ext;
+	e.logical_block = 0;
+	e.length = 1;
+	kmemcpy(&direntry->exts[0], &e, sizeof(extent_t));
+	
+	direntry->active_extents = 1;
+	direntry->file_size = 512;
+
+	dirent_t* dir = (dirent_t*)temp_dir_buf;
+
+	dir[0].inode_no = direntry->inode_no;
+	kstrcpy(dir[0].name, ".");
+
+	dir[1].inode_no = current_dir_cache.entries[0].inode_no;
+	kstrcpy(dir[1].name, "..");
+
+	dskws2(direntry->exts[0].physical_block, (uint8_t*)temp_dir_buf);
+}
+
+int create_entry(const char* name, uint32_t attributes)
+{
+	inode_t* inodes = (inode_t*)inode_table;
+	char buf[4];
+
+	int i = find_free_dir_slot();
+	if (i == -1) return -1;
+
+	itoa(i, buf);
+	print_string(buf, 0x00ff0000);
+	draw_char('\n', 0);
+
+	if (i >= (int)(current_dir_cache.active_extents * 16)){
+		inode_t* parent_dir = &inodes[current_dir_cache.dir_inode_no];
+		add_exts(parent_dir, 1);
 	}
+	
+	int j = fdi();
+	if (j == -1) return FS_FULL;
+	iuse(j);
+
+	itoa(j, buf);
+	print_string(buf, 0x00ff0000);
+	draw_char('\n', 0);
+
+	inode_t* new_entry_inode = &inodes[j];
+	populate_inode_metadata(new_entry_inode, j, attributes);
+	if (attributes & ATTR_DIRECTORY){
+		init_directory(new_entry_inode);
+	}
+	
+	dirent_t* new_direntry = &current_dir_cache.entries[i];
+	new_direntry->inode_no = j;
+	kstrcpy(new_direntry->name, name);
 
 	return 0;
 }
@@ -239,126 +294,159 @@ void grab_dir(inode_t* dir)
 	}
 }
 
-inode_t* resolve_dir_path(char* path)
+inode_t* fd_dir(const char* path)
 {
-	if (*path == '\0') return ENTRY_NOT_FOUND;
-	char* tokens[MAX_TOKENS];
-	int tc = kstrtok('/', path, tokens, MAX_TOKENS);
-	int found;
-	inode_t* inodes = (inode_t*)inode_table;
-	inode_t* target;
-	dirent_t* curr_dir = current_dir_cache.entries;
+	char path_str[256];
+	kstrcpy(path_str, path);
+	
 	int start_dir = 0;
-	for (int i = 0; i < tc; i++){
-		if (i == 0 && (kstrcmp((uint8_t*)tokens[i], (uint8_t*)".") == 0)){
-			start_dir = 1;
-			continue;
-		}
-		else if (i == 0 && (kstrcmp((uint8_t*)tokens[i], (uint8_t*)"..") == 0)){
-			start_dir = -1;
-			continue;
-		}
-		found = 0;
-		switch (start_dir){
-			case 1: {
-				int k = 0;
-				while (k < MAX_DIR_ENTRIES){
-					if (kstrcmp((uint8_t*)curr_dir->name, (uint8_t*)tokens[i]) == 0){
-						inode_t* di = &inodes[curr_dir->inode_no];
-						if (di->attributes & ATTR_DIRECTORY){
-							found = 1;
-							grab_dir(di);
-							target = di;
-							curr_dir = temp_dir_buf;
-							break;
-						}
-					}
-					curr_dir++;
-					k++;
-				}
-				break;
-			}
-			case -1: {
-				dirent_t* prev_dir = &curr_dir[1];
-				inode_t* prev = &inodes[prev_dir->inode_no];
-				grab_dir(prev);
-				curr_dir = temp_dir_buf;
-				int k = 0;
-				while (k < MAX_DIR_ENTRIES){
-					if (kstrcmp((uint8_t*)curr_dir->name, (uint8_t*)tokens[i]) == 0){
-						inode_t* di = &inodes[curr_dir->inode_no];
-						if (di->attributes & ATTR_DIRECTORY){
-							found = 1;
-							grab_dir(di);
-							target = di;
-							curr_dir = temp_dir_buf;
-							break;
-						}
-					}
-					curr_dir++;
-					k++;
-				}
-				break;
-			}
-		}
-		if (!found) return ENTRY_NOT_FOUND;
-	}
-	return target;
-}
-
-int fd_dir(const char* name)
-{
-	dirent_t* dir = current_dir_cache.entries;
 	int i = 0;
-	while (i < MAX_DIR_ENTRIES){
-		if (kstrcmp((uint8_t*)dir->name, (uint8_t*)name) == 0){
-			return 0;
+
+	char* path_toks[32];
+	int tc = kstrtok('/', path_str, path_toks, 32);
+	if (kstrcmp((uint8_t*)path_toks[0], (uint8_t*)".") == 0){
+		i = 1;
+	}
+	if (kstrcmp((uint8_t*)path_toks[0], (uint8_t*)"..") == 0){
+		start_dir = 1;
+		i = 1;
+	}
+		
+	inode_t* inodes = (inode_t*)inode_table;
+	dirent_t* curr_dir;
+
+	if (start_dir){
+		inode_t* parent = &inodes[current_dir_cache.entries[1].inode_no];
+		grab_dir(parent);
+		curr_dir = temp_dir_buf;
+	}else{
+		curr_dir = current_dir_cache.entries;
+	}
+
+	inode_t* target_inode;
+	
+	while(i < tc){
+		int found = 0;
+		int k = 0;
+		while (k < MAX_DIR_ENTRIES){
+			if (curr_dir[k].name[0] != '\0' && (kstrcmp((uint8_t*)curr_dir[k].name, (uint8_t*)path_toks[i]) == 0))
+			{
+				inode_t* ci = &inodes[curr_dir[k].inode_no];
+
+				if (ci->attributes & ATTR_DIRECTORY){
+					found = 1;
+					grab_dir(ci);
+					curr_dir = temp_dir_buf;
+					target_inode = ci;
+					break;
+				}
+			}
+			k++;
 		}
-		dir++;
+		if (!found){
+			return ENTRY_NOT_FOUND;
+		}
 		i++;
 	}
-	return -1;
+	return target_inode;
 }
 
-int cd(char* path)
+void update_cwd_str(char* path)
 {
-	inode_t* dir = resolve_dir_path(path);
-	if (dir == ENTRY_NOT_FOUND) return -1;
-	cache_dir(dir);
+	char temp[256] = {0};
+	kstrcpy(temp, path);
+	char* ptr = temp;
 
-	int is_curr_dir;
-	char* ptr = path;
-	while (*ptr){
-		if (*ptr == '.'){
-			if (*(ptr + 1) == '.'){
-				is_curr_dir = 0;
-				ptr += 2;
-				break;
-			}else{
-				is_curr_dir = 1;
-				ptr++;
-				break;
-			}
+	int in_curr_dir;
+	if (*ptr == '.'){
+		if (*(ptr + 1) == '.'){
+			in_curr_dir = -1;
+			ptr += 2;
+		}else{
+			in_curr_dir = 1;
+			ptr++;
 		}
+	}else{
+		in_curr_dir = 0;
 	}
-	if (is_curr_dir){
+
+	if (in_curr_dir == 1){
 		kstrcpy(&cwd_path[path_ptr], ptr);
 		path_ptr += kstrlen(ptr);
 		cwd_path[path_ptr] = '>';
-	}else{
-		char* dirs[10];
-		int dir_level = kstrtok('/', cwd_path, dirs, 10);
-		if (dir_level == 1) return -1;
-
-		while (cwd_path[path_ptr] && cwd_path[path_ptr] != '/'){
+	}else if (in_curr_dir == -1){
+		while(cwd_path[path_ptr] && cwd_path[path_ptr] != '/'){
 			cwd_path[path_ptr] = '\0';
 			path_ptr--;
 		}
 		kstrcpy(&cwd_path[path_ptr], ptr);
 		path_ptr += kstrlen(ptr);
 		cwd_path[path_ptr] = '>';
+	}else{
+		cwd_path[path_ptr++] = '/';
+		kstrcpy(&cwd_path[path_ptr], ptr);
+		path_ptr += kstrlen(ptr);
+		cwd_path[path_ptr] = '>';
 	}
+}
+/*
+inode_t* resolve_dir_path(char* path)
+{
+}
+*/
+int cd(char* path)
+{
+	char buf[32] = {0};
+	inode_t* dir = fd_dir(path);
+	if (dir == ENTRY_NOT_FOUND) return -1;
+
+	itoa(dir->inode_no, buf);
+	print_string(buf, 0x00ff0000);
+	draw_char('\n', 0);
+	itoa(dir->exts[0].physical_block, buf);
+	print_string(buf, 0x00ff0000);
+	print_string("\n", 0);
+	if (cache_dir(dir) == -1) return -1;
+	
+	update_cwd_str(path);
 	return 0;
+}
+
+void ls(void)
+{
+	dirent_t* ptr = current_dir_cache.entries;
+	int i = 0;
+	int total_entries = 0;
+	inode_t* inode_base = (inode_t*)inode_table;
+	char buf[32];
+	while (i < MAX_DIR_ENTRIES){
+		if (ptr->name[0] == '\0'){
+			i++;
+			ptr++;
+		       	continue;
+		}
+		inode_t* curr = &inode_base[ptr->inode_no];
+		if (curr->attributes & ATTR_DIRECTORY){
+			print_string("DIR ", TOS_COLOR_RED);
+		}else{
+			print_string("FILE ", 0x00ff1dce);
+		}
+		print_string(ptr->name, 0x00ff);
+		print_string("    ", 0x0);
+		itoa(curr->file_size, buf);
+		print_string(buf, TOS_COLOR_RED);
+		print_string("Bytes", 0x00228b22);
+		draw_char('\n', 0);
+		
+		kmemset(buf, 0, 32);
+		ptr++;
+		i++;
+		total_entries++;
+	}
+	print_string("Total: ", 0x0);
+	itoa(total_entries, buf);
+	print_string(buf, 0x00ff0000);
+	draw_char('\n', 0);
 }
 
 void print_shell_prompt()

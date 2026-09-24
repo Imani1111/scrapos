@@ -282,18 +282,18 @@ void set_cursor(uint32_t x, uint32_t y){
 		       	y < cursor_bounds.min_y || y >= cursor_bounds.max_y){
 		return;
 	}*/
-	
+	/*
 	if (cursor_visible){
 		toggle_cursor(cursor_x, cursor_y);
 	}
-
+	*/
 	cursor_x = x;
 	cursor_y = y;
-	
+	/*
 	if (cursor_visible){
 		toggle_cursor(cursor_x, cursor_y);
 	}
-
+	*/
 	cursor_busy = 0;
 }
 
@@ -331,4 +331,21 @@ void set_cursor_bounds(int minx, int maxx, int miny, int maxy){
 	cursor_bounds.max_y = maxy;
 }
 
+void store_cursor_attributes(Cursor_bounds* c, cursor_pos_t* cpos)
+{
+	c->min_x = cursor_bounds.min_x;
+	c->max_x = cursor_bounds.max_x;
+	c->min_y = cursor_bounds.min_y;
+	c->max_y = cursor_bounds.max_y;
+	cpos->cx = cursor_x;
+	cpos->cy = cursor_y;
+}
 
+void restore_cursor(Cursor_bounds* c, cursor_pos_t* cpos)
+{
+	cursor_bounds.min_x = c->min_x;
+	cursor_bounds.max_x = c->max_x;
+	cursor_bounds.min_y = c->min_y;
+	cursor_bounds.max_y = c->max_y;
+	set_cursor(cpos->cx, cpos->cy);
+}

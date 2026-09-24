@@ -62,14 +62,17 @@ typedef struct {
 #define DIR_FULL -1
 #define INVALID_PATH -1
 #define ENTRY_NOT_FOUND ((inode_t*)-1)
+#define CD_ENF -1
+#define CACHE_ERR -2
 #define MAX_TOKENS 32
 
 void init_fs(void);
 int create_entry(const char* name, uint32_t attributes);
-void cache_dir(inode_t* dir);
+int cache_dir(inode_t* dir);
 void grab_dir(inode_t* dir);
-int fd_dir(const char* name);
+inode_t* fd_dir(const char* name);
 int cd(char* path);
+void ls(void);
 inode_t* resolve_dir_path(char* path);
 void print_shell_prompt(void);
 #endif

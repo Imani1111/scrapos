@@ -28,6 +28,10 @@ typedef struct {
 	int max_y;
 }Cursor_bounds;
 
+typedef struct {
+	int cx;
+	int cy;
+}cursor_pos_t;
 extern int cursor_x;
 extern int cursor_y;
 
@@ -45,6 +49,7 @@ void cursor_blink(void);
 void set_cursor(uint32_t x, uint32_t y);
 void draw_pixel(uint32_t x, uint32_t y, uint32_t color);
 void set_cursor_bounds(int minx, int maxx, int miny, int maxy);
-
+void store_cursor_attributes(Cursor_bounds* c, cursor_pos_t* cpos);
+void restore_cursor(Cursor_bounds* c, cursor_pos_t* cpos);
 
 #endif

@@ -3,6 +3,7 @@
 #include <screen.h>
 #include <idt.h>
 #include <string.h>
+#include <ui.h>
 
 TaskControlBlock_t* head_task = NULL;
 TaskControlBlock_t* tail_task = NULL;
@@ -44,7 +45,7 @@ void init_multitasking()
 	kernel_task->esp = (uint32_t)stack_pointer;
 	kernel_task->base = (uint32_t*)stack_base;
 	kernel_task->pid = 0;
-	char* name = "Kernel Task";
+	char* name = "Kernel_Task";
 	kstrcpy(kernel_task->name, name);
 	kernel_task->state = TASK_READY;
 	kernel_task->parent_pid = 0;
@@ -183,11 +184,39 @@ void KillTask(TaskControlBlock_t* task)
 			}
 			parent_task = parent_task->next;
 		}while(parent_task != head_task);
-
+		
 		target_task->state = TASK_ZOMBIE;
 	}
 
 	asm volatile("int $0x20");
+}
+
+void reaper()
+{
+	while (1){
+		TaskControlBlock_t* task = head_task;
+		do {
+			if (task->state == TASK_ZOMBIE){
+				asm volatile("cli");
+
+				// unlink the tcb and free its stack and tcb
+				TaskControlBlock_t* next_task = task->next;
+				task->next->prev = task->prev;
+				task->prev->next = task->next;
+				if (task == tail_task){
+					tail_task = task->prev;
+				}
+				my_free(task->base);
+				my_free(task);
+
+				task = next_task;
+				asm volatile("sti");
+				break;
+			}
+
+			task = task->next;
+		}while (task != NULL && task != head_task);
+	}
 }
 
 void set_task_state(int pid, TaskState state)
@@ -219,6 +248,42 @@ void awake_parent(TaskControlBlock_t* task)
 		parent_pid = task->parent_pid;
 	}
 	set_task_state(parent_pid, TASK_READY);
+}
+
+void ls_tasks()
+{
+	print_string("PID ", 0x00800080);
+	print_string("ESP_VAL  ", 0x00800080);
+	print_string("CC ", 0x00800080);
+	print_string("STATE ", 0x00800080);
+	print_string("TASK_NAME", 0x00800080);
+	draw_char('\n', 0);
+
+	TaskControlBlock_t* t = head_task;
+	char buf[4];
+	do{
+		itoa(t->pid, buf);
+		print_string(buf, 0x0);
+		print_string(" ", 0);
+		print_hex(t->esp, TOS_COLOR_RED);
+		print_string(" ", 0);
+		itoa(t->child_count, buf);
+		print_string(buf, 0x00ffff00);
+		print_string("  ", 0);
+		if (t->state == TASK_RUNNING){
+			print_string("t_run  ", 0x0000ff00);
+		}else if (t->state == TASK_READY){
+			print_string("t_rdy  ", 0x00ff);
+		}else if (t->state == TASK_BLOCKED){
+			print_string("t_blkd ", 0x00ffff00);
+		}else if (t->state == TASK_ZOMBIE){
+			print_string("t_zomb ", 0x00ff0000);
+		}
+		print_string(t->name, 0x00008000);
+		print_string("\n", 0);
+
+		t = t->next;
+	}while (t != NULL && t != head_task);
 }
 
 

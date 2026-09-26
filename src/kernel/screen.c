@@ -201,20 +201,18 @@ void print_string(const char* str, uint32_t color){
 	}
 }
 
-void print_hex(uint32_t val, int start_x, int y)
+void print_hex(uint32_t val, uint32_t color)
 {
 	char hex_chars[] = "0123456789ABCDEF";
 	char buf[8];
-	for (int i = 7; i > 0; i--){
+	for (int i = 7; i >= 0; i--){
 		buf[i] = hex_chars[val & 0xF];
 		val >>= 4;
 	}
-	draw_char_at('0', start_x, y, 0x0000FF00);
-	draw_char_at('x', start_x + 8, y, 0x0000FF00);
-	int x = start_x + 8;
+	draw_char('0', color);
+	draw_char('x', color);
 	for (int i = 0; i < 8; i++){
-		draw_char_at(buf[i], x, y, 0x0000FF00);
-		x+=8;
+		draw_char(buf[i], color);
 	}
 }
 

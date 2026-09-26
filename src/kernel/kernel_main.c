@@ -16,7 +16,19 @@ extern uint32_t first_allocatable_addr;
 
 void app_launcher(void)
 {
-	Window_t* win = open_window(24, 40, 320, 200, 0x0, 0x00ff, "APPLAUNCHER");
+	clear_screen(TOS_COLOR_CYAN);
+	draw_rect(0, 448, 640, 32, TOS_COLOR_WHITE);
+	draw_rect(0, 448, 640, 2, TOS_COLOR_DARK_GRAY);
+	
+	read_rtc();
+	realtime_t* time = get_current_timestamp();
+	char disp[20];
+	format_time(time, disp);	
+
+	draw_rect(480, 458, 144, 14, TOS_COLOR_YELLOW);
+	print_string_at(disp, 482, 461, 0x00ff);
+
+	Window_t* win = open_window(24, 40, 320, 200, 0x0, TOS_COLOR_RED, 0x00ffffff, "APPLAUNCHER");
 	set_cursor(32, 56);
 	set_cursor_bounds(32, 320, 48, 240);
 
@@ -62,15 +74,9 @@ void kernel_main()
 	init_fs();
 	init_pmm();
 	init_vmm();
-		
-	read_rtc();
-	realtime_t* time = get_current_timestamp();
-	char disp[20];
-	format_time(time, disp);	
-	print_string(disp, 0xff);
-	print_string("\n\n", 0);	
 	
 	init_multitasking();
+	SpawnTask(reaper, "TaskReaper");
 	SpawnTask(app_launcher, "AppLauncher");
 		
 	init_pit(100);

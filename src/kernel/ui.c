@@ -39,8 +39,9 @@ void outline_rect(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint8_t outlin
 
 void draw_active_title_bar(Window_t* win)
 {
-	draw_rect(win->x + 2, win->y + 2, win->w - 4, 12, ACTIVE_TITLE_BAR);
-	print_string_at(win->name, win->x + 6, win->y + 3, 0x0000FF00);
+	draw_rect(win->x + 2, win->y + 2, win->w - 4, 12, win->fc);
+	print_string_at(win->name, win->x + 6, win->y + 3, win->tc);
+	print_string_at("[X]", win->x + (win->w - 32), win->y + 3, 0x00ff0000);
 }
 
 void draw_inactive_title_bar(Window_t* win)
@@ -64,7 +65,7 @@ void handle_bounds_error(){
 	}
 }
 */
-Window_t* create_window(uint32_t x, uint32_t y, uint16_t width, uint16_t height, uint32_t window_color, uint32_t frame_color, const char* title){
+Window_t* create_window(uint32_t x, uint32_t y, uint16_t width, uint16_t height, uint32_t window_color, uint32_t frame_color, uint32_t title_color, const char* title){
 	for (int i = 0; i < MAX_WINDOW_DEPTH; i++){
 		if (windows[i].winspace != OCCUPIED){
 			windows[i].x = x;
@@ -75,6 +76,7 @@ Window_t* create_window(uint32_t x, uint32_t y, uint16_t width, uint16_t height,
 			windows[i].pid = current_task->pid;
 			windows[i].bg = window_color;
 			windows[i].fc = frame_color;
+			windows[i].tc = title_color;
 			windows[i].win_idx = i;
 			windows[i].winspace = OCCUPIED;
 			store_cursor_attributes(&windows[i].cb, &windows[i].cpos);
@@ -130,10 +132,10 @@ void redraw_snapshot(Window_t* win)
 	asm volatile("sti");
 }
 
-Window_t* open_window(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint32_t bg, uint32_t fc, const char* t)
+Window_t* open_window(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint32_t bg, uint32_t fc, uint32_t tc, const char* t)
 {
 	asm volatile("cli");
-	Window_t* win = create_window(x, y, w, h, bg, fc, t);
+	Window_t* win = create_window(x, y, w, h, bg, fc, tc, t);
 	if (win == NULL){
 		print_string("Window Limit Reached!\n", 0x00ff0000);
 		asm volatile("sti");
@@ -207,6 +209,7 @@ void close_window(Window_t* win)
 	asm volatile("sti");
 }
 
+/*
 void start_menu()
 {
 	cursor_pos_t cpos;
@@ -277,4 +280,5 @@ void InitDesktop()
 		}
 	}
 }
+*/
 

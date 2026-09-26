@@ -44,5 +44,7 @@ TaskControlBlock_t* SpawnTask(void(*entry_function)(void), const char* name);
 uint32_t Schedule(uint32_t current_esp);
 void KillTask(TaskControlBlock_t* task);
 void set_task_state(int pid, TaskState state);
+void reaper(void);
 void awake_parent(TaskControlBlock_t* task);
+void ls_tasks(void);
 #endif

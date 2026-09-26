@@ -13,9 +13,10 @@ extern int cursor_y;
 char* cmd_toks[64];
 char buf[256];
 
+
 void shell_main()
 {	
-	Window_t* win = open_window(100, 80, 400, 300, 0x00A9A9A9, 0x000000ff, "Shell");
+	Window_t* win = open_window(100, 80, 400, 300, 0x00A9A9A9, 0x000000ff, 0x0, "Shell");
 	reset_cursor_bounds();	
 	set_cursor(108, 96);
 	set_cursor_bounds(108, 492, 96, 372);
@@ -63,7 +64,10 @@ void shell_main()
 								print_string("CD failed!: entry not found\n", 0x00ff0000);
 							}
 						}
-					}else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"exit") == 0){
+					}else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"ps") == 0){
+						ls_tasks();
+					}
+					else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"exit") == 0){
 						close_window(win);
 						awake_parent(NULL);
 						KillTask(NULL);

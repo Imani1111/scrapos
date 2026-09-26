@@ -1,5 +1,5 @@
 ASM = nasm
-QEMU = qemu-system-i386 -vga std -d int -no-reboot -no-shutdown -hda $(TARGET) -hdb $(FS)
+QEMU = qemu-system-i386 -m 1G -vga std -d int -no-reboot -no-shutdown -hda $(TARGET) -hdb $(FS)
 CC = i686-elf-gcc
 CFLAGS =  -m32 -ffreestanding -O0 -g -nostdlib -fno-pie -fno-pic -fomit-frame-pointer -fno-builtin -fno-stack-protector -Wall -Wextra -mno-mmx -mno-sse -I$(INCLUDE_DIR)
 LD = i686-elf-ld 

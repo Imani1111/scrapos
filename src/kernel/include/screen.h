@@ -40,7 +40,7 @@ void draw_char_at(char c, uint32_t x, uint32_t y, uint32_t color);
 void draw_char(char c, uint32_t color);
 void print_string_at(const char* str, uint32_t startx, uint32_t starty, uint32_t color);
 void print_string(const char* str, uint32_t color);
-void print_hex(uint32_t val, int start_x, int y);
+void print_hex(uint32_t val, uint32_t color);
 void draw_block(uint32_t x, uint32_t y, uint32_t color);
 void draw_cursor(void);
 void toggle_cursor(uint32_t x, uint32_t y);

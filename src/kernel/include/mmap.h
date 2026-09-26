@@ -18,7 +18,7 @@ typedef struct {
 
 #define NO_OF_ENTRIES 1024
 #define PAGE 4096
-#define MAX_PAGES 65536
+#define MAX_PAGES 262144
 #define PAGE_PRESENT 0x1
 #define READ_WRITE 0x2
 #define USER_SUPERVISOR 0x4

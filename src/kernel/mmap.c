@@ -35,7 +35,7 @@ void init_pmm()
 		page = (page + (PAGE- 1)) & ~(PAGE - 1);
 		
 		while(page < entry_end){
-			if (page >= 0x100000 && page >= first_allocatable_addr && page < 0xFFE0000){
+			if (page >= 0x100000 && page >= first_allocatable_addr){
 				if (pmm_stack_alloc.stack_pointer < pmm_stack_alloc.capacity){
 					pmm_stack_alloc.page_addresses[pmm_stack_alloc.stack_pointer] = page;
 					pmm_stack_alloc.stack_pointer++;
@@ -48,6 +48,13 @@ void init_pmm()
 			page += PAGE;
 		}
 	}
+	/*
+	print_hex(pmm_stack_alloc.page_addresses[--pmm_stack_alloc.stack_pointer], 0x00ff);
+	print_string("\n", 0);
+	char buf[10];
+	itoa(pmm_stack_alloc.stack_pointer, buf);
+	print_string(buf, 0x00ff);
+	print_string("\n", 0);*/
 }
 
 uint32_t pmm_alloc_page()

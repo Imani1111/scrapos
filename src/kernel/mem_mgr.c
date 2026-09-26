@@ -88,7 +88,6 @@ void my_free(void* ptr)
 	block->is_free = BLOCK_FREE;
 	
 	if (block->next != heap_start && block->next->is_free){
-		print_string("\nYES!\n", 0x00ff0000);
 		block->size += block->next->size + sizeof(HeapBlockMetaData);
 		block->next = block->next->next;
 		block->next->prev = block;
@@ -101,7 +100,6 @@ void my_free(void* ptr)
 		block->prev->next = block->next;
 		block->next->prev = block->prev;
 	}
-	print_string("Free!\n", 0x0000ff00);
 }
 
 void* sbrk(int32_t increment)

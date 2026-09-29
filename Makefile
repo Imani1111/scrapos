@@ -1,5 +1,5 @@
 ASM = nasm
-QEMU = qemu-system-i386 -m 1G -vga std -d int -no-reboot -no-shutdown -hda $(TARGET) -hdb $(FS)
+QEMU = qemu-system-i386 -m 1G -vga std -no-reboot -no-shutdown -hda $(TARGET) -hdb $(FS)
 CC = i686-elf-gcc
 CFLAGS =  -m32 -ffreestanding -O0 -g -nostdlib -fno-pie -fno-pic -fomit-frame-pointer -fno-builtin -fno-stack-protector -Wall -Wextra -mno-mmx -mno-sse -I$(INCLUDE_DIR)
 LD = i686-elf-ld 
@@ -65,6 +65,9 @@ MMAP_OBJ = $(BUILD_DIR)/mmap.o
 
 RTC_C = $(KERNEL_DIR)/rtc.c
 RTC_OBJ = $(BUILD_DIR)/rtc.o
+
+LAUNCHER_C = $(KERNEL_DIR)/launcher.c
+LAUNCHER_OBJ = $(BUILD_DIR)/launcher.o
 
 BUILD_FS = $(TOOLS_DIR)/buildfs
 
@@ -141,8 +144,11 @@ $(MMAP_OBJ): $(MMAP_C)
 $(RTC_OBJ): $(RTC_C)
 	$(CC) $(CFLAGS) -c $(RTC_C) -o $(RTC_OBJ)
 
-$(KERNEL_ELF): $(KERNEL_ENTRY_OBJ) $(KERNEL_OBJ_MAIN) $(SCREEN_OBJ) $(IDTC_OBJ) $(IDTASM_OBJ) $(KEYBOARD_OBJ) $(PIT_OBJ) $(UI_OBJ) $(MEM_MGR_OBJ) $(TASK_MGR_OBJ) $(STRING_OBJ) $(DISK_MGR_OBJ) $(SHELL_OBJ) $(FS_OBJ) $(MMAP_OBJ) $(RTC_OBJ) $(MYLINKER)
-	$(LD) $(LDFLAGS) $(KERNEL_ENTRY_OBJ) $(KERNEL_OBJ_MAIN) $(SCREEN_OBJ) $(IDTC_OBJ) $(IDTASM_OBJ) $(KEYBOARD_OBJ) $(PIT_OBJ) $(UI_OBJ) $(MEM_MGR_OBJ) $(TASK_MGR_OBJ) $(STRING_OBJ) $(DISK_MGR_OBJ) $(SHELL_OBJ) $(FS_OBJ) $(MMAP_OBJ) $(RTC_OBJ) -o $(KERNEL_ELF)
+$(LAUNCHER_OBJ): $(LAUNCHER_C)
+	$(CC) $(CFLAGS) -c $(LAUNCHER_C) -o $(LAUNCHER_OBJ)
+
+$(KERNEL_ELF): $(KERNEL_ENTRY_OBJ) $(KERNEL_OBJ_MAIN) $(SCREEN_OBJ) $(IDTC_OBJ) $(IDTASM_OBJ) $(KEYBOARD_OBJ) $(PIT_OBJ) $(UI_OBJ) $(MEM_MGR_OBJ) $(TASK_MGR_OBJ) $(STRING_OBJ) $(DISK_MGR_OBJ) $(SHELL_OBJ) $(FS_OBJ) $(MMAP_OBJ) $(RTC_OBJ) $(LAUNCHER_OBJ) $(MYLINKER)
+	$(LD) $(LDFLAGS) $(KERNEL_ENTRY_OBJ) $(KERNEL_OBJ_MAIN) $(SCREEN_OBJ) $(IDTC_OBJ) $(IDTASM_OBJ) $(KEYBOARD_OBJ) $(PIT_OBJ) $(UI_OBJ) $(MEM_MGR_OBJ) $(TASK_MGR_OBJ) $(STRING_OBJ) $(DISK_MGR_OBJ) $(SHELL_OBJ) $(FS_OBJ) $(MMAP_OBJ) $(RTC_OBJ) $(LAUNCHER_OBJ) -o $(KERNEL_ELF)
 
 $(KERNEL_BIN): $(KERNEL_ELF)
 	objcopy -O binary $(KERNEL_ELF) $(KERNEL_BIN)

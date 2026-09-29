@@ -37,5 +37,6 @@ typedef struct {
 void read_rtc(void);
 realtime_t* get_current_timestamp(void);
 void format_time(realtime_t* t, char* b);
+void update_clock(void);
 
 #endif

@@ -2,8 +2,10 @@
 #include <idt.h>
 #include <screen.h>
 #include <string.h>
+#include <ui.h>
 
 realtime_t systime = {0};
+uint32_t clock_timer = 0;
 
 uint8_t check_update_in_progress_flag(void)
 {
@@ -129,5 +131,48 @@ void format_time(realtime_t* t, char* b)
 	itoa(t->year, c);
 	kmemcpy(&b[15], c, 2);
 	b[17] = '\0';
+}
+
+void update_clock()
+{
+	clock_timer++;
+
+	if ((clock_timer % 100) == 0){
+		systime.second++;
+		char b[3];	
+		if (systime.second >= 60){
+			systime.second = 0;
+			systime.minute++;
+			itoa(systime.minute, b);
+			draw_block(508, 1, TOS_COLOR_CYAN);
+			draw_block(516, 1, TOS_COLOR_CYAN);
+			if ((systime.minute / 10) < 1){
+				print_string_at("0", 508, 1, 0);
+				print_string_at(b, 516, 1, 0);
+			}else{
+				print_string_at(b, 508, 1, 0);
+			}
+		}
+
+		draw_block(532, 1, TOS_COLOR_CYAN);
+		draw_block(540, 1, TOS_COLOR_CYAN);
+
+		itoa(systime.second, b);
+		if ((systime.second / 10) < 1){
+			print_string_at("0", 532, 1, 0);
+			print_string_at(b, 540, 1, 0);
+		}else{
+			print_string_at(b, 532, 1, 0);
+		}
+
+		if (systime.minute >= 60){
+			systime.minute = 0;
+			systime.hour++;
+		}
+		if (systime.hour >= 24){
+			systime.hour = 0;
+			systime.day++;
+		}
+	}
 }
 

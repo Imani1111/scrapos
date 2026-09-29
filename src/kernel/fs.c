@@ -447,5 +447,5 @@ void ls(void)
 
 void print_shell_prompt()
 {
-	print_string(cwd_path, 0x00ff);
+	print_string(cwd_path, 0x009D00FF);
 }

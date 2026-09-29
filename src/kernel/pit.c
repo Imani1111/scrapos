@@ -1,6 +1,7 @@
 #include <pit.h>
 #include <idt.h>
 #include <screen.h>
+#include <rtc.h>
 
 uint32_t pit_ticks = 0;
 
@@ -17,6 +18,7 @@ void init_pit(uint32_t preferred_freq)
 void PITInterruptHandler()
 {
 	pit_ticks++;
+	update_clock();
 	cursor_blink();
 	PIC_sendEOI(32);
 }

@@ -13,8 +13,8 @@
 void app_launcher(void)
 {	
 	//clear_screen(TOS_COLOR_CYAN);
-	//draw_rect(0, 448, 640, 32, TOS_COLOR_WHITE);
-	//draw_rect(0, 448, 640, 2, TOS_COLOR_DARK_GRAY);
+	draw_rect(0, 448, 640, 32, TOS_COLOR_DARK_GRAY);
+	draw_rect(0, 448, 640, 2, TOS_COLOR_DARK_GRAY);
 	//
 	outline_rect(0, 0, 640, 480, 10, TOS_COLOR_CYAN);
 	read_rtc();
@@ -22,7 +22,7 @@ void app_launcher(void)
 	char disp[20];
 	format_time(time, disp);
 	
-	print_string_at("SCRAP_OPERATING_SYSTEM", 240, 1, 0);
+	print_string_at("SCRAP_OPERATING_SYSTEM", 240, 1, 0x00ff);
 	print_string_at(disp, 484, 1, 0);
 
 	Window_t* win = open_window(24, 40, 320, 200, 0x0, TOS_COLOR_RED, 0x00ffffff, "APPLAUNCHER");

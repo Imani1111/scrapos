@@ -129,6 +129,11 @@ void format_time(realtime_t* t, char* b)
 	kmemcpy(&b[12], c, 2);
 	b[14] = '/';
 	itoa(t->year, c);
+	if (c[1] == '\0'){
+		char t = c[0];
+		c[0] = '0';
+		c[1] = t;
+	}
 	kmemcpy(&b[15], c, 2);
 	b[17] = '\0';
 }

@@ -9,6 +9,11 @@ uint8_t b[BITMAP];
 uint8_t inodebm[512];
 uint8_t inode_table[INODES * 128];
 
+uint32_t inodes_start_sector;
+uint32_t sector_bitmap;
+uint32_t inode_bitmap;
+uint32_t data_sea;
+
 dirent_t temp_dir_buf[MAX_DIR_ENTRIES];
 cwd_cache current_dir_cache;
 char cwd_path[1024] = {0};
@@ -17,24 +22,21 @@ int path_ptr = 0;
 void init_fs()
 {
 	uint8_t s[512];
-	uint32_t inodes;
-	uint32_t sector_bitmap;
-	uint32_t inode_bitmap;
-	uint32_t data_sea;
+
 	dskrs2(0, s);
 	superblock_t* sb = (superblock_t*)s;
 	if (sb->magic != FS_MAGIC){
 		print_string("File system not found!\n", 0x00ff0000);
 		return;
 	}
-	inodes = sb->root_inode;
+	inodes_start_sector = sb->root_inode;
 	sector_bitmap = sb->sector_bitmap;
 	inode_bitmap = sb->inode_bitmap;
 	data_sea = sb->data_sea;
 
 	uint32_t* it = (uint32_t*)inode_table;
 	for (int i = 0; i < 128; i++){
-		dskrs2(inodes + i, s);
+		dskrs2(inodes_start_sector + i, s);
 		uint32_t* sector_words = (uint32_t*)s;
 		for (int j = 0; j < 128; j++){
 			*it++ = sector_words[j];
@@ -57,7 +59,6 @@ void init_fs()
 	cwd_path[path_ptr] = '>';
 
 	dskrs2(inode_bitmap, inodebm);
-	print_string("Everything still works!\n", 0x00ff);
 }
 
 int cache_dir(inode_t* dir)
@@ -186,6 +187,27 @@ int find_free_dir_slot()
 	return i;
 }
 
+void flush_ibm()
+{
+	dskws2(inode_bitmap, inodebm);
+}
+
+void flush_sbm()
+{
+	uint8_t* s_ptr = b;
+	for (int i = 0; i < 5; i++){
+		dskws2(sector_bitmap + i, s_ptr);
+		s_ptr += 512;
+	}
+}
+
+void flush_inode(int inode_no)
+{
+	inode_t* inodes = (inode_t*)inode_table;
+	int sector = (inode_no / 4) + inodes_start_sector;
+	dskws2(sector, (uint8_t*)&inodes[(inode_no / 4) * 4]);
+}
+
 void populate_inode_metadata(inode_t* inode, uint32_t inode_no, uint32_t attributes)
 {
 	inode->inode_no = inode_no;
@@ -229,6 +251,7 @@ void init_directory(inode_t* direntry)
 	kstrcpy(dir[1].name, "..");
 
 	dskws2(direntry->exts[0].physical_block, (uint8_t*)temp_dir_buf);
+	flush_sbm();
 }
 
 int create_entry(const char* name, uint32_t attributes)
@@ -257,6 +280,8 @@ int create_entry(const char* name, uint32_t attributes)
 	new_direntry->inode_no = j;
 	kstrcpy(new_direntry->name, name);
 
+	flush_ibm();
+	flush_inode(j);
 	return 0;
 }
 
@@ -390,6 +415,21 @@ void update_cwd_str(char* path)
 		cwd_path[path_ptr] = '>';
 	}
 }
+
+
+void flush_dentry()
+{
+	uint8_t* sector_ptr = (uint8_t*)current_dir_cache.entries;
+	inode_t* inodes = (inode_t*)inode_table;
+	inode_t* dir = &inodes[current_dir_cache.dir_inode_no];
+	for (int i = 0; i < (int)current_dir_cache.active_extents; i++){
+		for (int j = 0; j < (int)dir->exts[i].length; j++){
+			dskws2(dir->exts[i].physical_block + j, sector_ptr);
+			sector_ptr += 512;
+		}
+	}
+	dir->active_extents = current_dir_cache.active_extents;
+}
 /*
 inode_t* resolve_dir_path(char* path)
 {
@@ -397,6 +437,7 @@ inode_t* resolve_dir_path(char* path)
 */
 int cd(char* path)
 {
+	flush_dentry();
 	inode_t* dir = fd_dir(path);
 	if (dir == ENTRY_NOT_FOUND){
 		return CD_ENF;
@@ -428,10 +469,9 @@ void ls(void)
 		if (curr->attributes & ATTR_DIRECTORY){
 			print_string("DIR  ", TOS_COLOR_RED);
 		}else{
-			print_string("FILE ", 0);
+			print_string("FILE ", 0x00ff);
 		}
-		print_string(ptr->name, 0x00ff);
-		print_string(" ", 0x0);
+
 
 		realtime_t time;
 		time.second = curr->ctime & 0xFF;
@@ -442,11 +482,13 @@ void ls(void)
 		time.year = (curr->ctime >> 40) & 0xFF;
 
 		format_time(&time, timebuf);
-		print_string(timebuf, 0);
+		print_string(timebuf, 0x00ff);
 		print_string(" ", 0);
 		itoa(curr->file_size, buf);
-		print_string(buf, TOS_COLOR_RED);
-		print_string("Bytes", 0x00228b22);
+		print_string(buf, 0x00ff);
+		print_string("B ", 0x00ff);
+		print_string(ptr->name, 0x0);
+		print_string(" ", 0x0);
 		draw_char('\n', 0);
 		
 		kmemset(buf, 0, 32);

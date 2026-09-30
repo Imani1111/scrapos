@@ -107,7 +107,7 @@ int dskws2(uint32_t lba, uint8_t* b)
 	}
 	uint16_t* t = (uint16_t*)b;
 	for (int i = 0; i < 256; i++){
-		t[i] = read_word_from_port(DATA_PORT);
+		send_word_to_port(DATA_PORT, t[i]);
 	}
 	
 	send_byte_to_port(COMMAND_PORT, FLUSH_CACHE);

@@ -62,11 +62,11 @@ void init_fs()
 
 int cache_dir(inode_t* dir)
 {
+	if (dir->inode_no < 0 || dir->inode_no > 512) return -1;
 	if (!(dir->attributes & ATTR_DIRECTORY)) return -1;
 
 	current_dir_cache.active_extents = dir->active_extents;
 	current_dir_cache.dir_inode_no = dir->inode_no;
-
 	int curr_ext_lba;
 	uint8_t ext_block[512];
 
@@ -298,19 +298,30 @@ inode_t* fd_dir(const char* path)
 	if (kstrcmp((uint8_t*)path_toks[0], (uint8_t*)".") == 0){
 		i = 1;
 	}
-	if (kstrcmp((uint8_t*)path_toks[0], (uint8_t*)"..") == 0){
+	else if (kstrcmp((uint8_t*)path_toks[0], (uint8_t*)"..") == 0){
 		start_dir = 1;
 		i = 1;
+	}else{
+		return SPECIFY_DIR;
 	}
 		
 	inode_t* inodes = (inode_t*)inode_table;
 	dirent_t* curr_dir;
-
+	
 	if (start_dir){
+		inode_t* cdir = &inodes[current_dir_cache.dir_inode_no];
+		if (cdir->inode_no == 0) return ENTRY_NOT_FOUND;
 		inode_t* parent = &inodes[current_dir_cache.entries[1].inode_no];
+
+		if (tc == 1){
+			return parent;
+		}
 		grab_dir(parent);
 		curr_dir = temp_dir_buf;
 	}else{
+		if (tc == 1){
+			return &inodes[current_dir_cache.dir_inode_no];
+		}
 		curr_dir = current_dir_cache.entries;
 	}
 
@@ -320,10 +331,9 @@ inode_t* fd_dir(const char* path)
 		int found = 0;
 		int k = 0;
 		while (k < MAX_DIR_ENTRIES){
-			if (curr_dir[k].name[0] != '\0' && (kstrcmp((uint8_t*)curr_dir[k].name, (uint8_t*)path_toks[i]) == 0))
+			if (kstrcmp((uint8_t*)curr_dir[k].name, (uint8_t*)path_toks[i]) == 0)
 			{
 				inode_t* ci = &inodes[curr_dir[k].inode_no];
-
 				if (ci->attributes & ATTR_DIRECTORY){
 					found = 1;
 					grab_dir(ci);
@@ -388,8 +398,13 @@ inode_t* resolve_dir_path(char* path)
 int cd(char* path)
 {
 	inode_t* dir = fd_dir(path);
-	if (dir == ENTRY_NOT_FOUND) return -1;
-	if (cache_dir(dir) == -1) return -1;
+	if (dir == ENTRY_NOT_FOUND){
+		return CD_ENF;
+	}else if (dir == SPECIFY_DIR){
+		return -3;
+	}
+	
+	if (cache_dir(dir) == -1) return CACHE_ERR;
 	
 	update_cwd_str(path);
 	return 0;
@@ -413,7 +428,7 @@ void ls(void)
 		if (curr->attributes & ATTR_DIRECTORY){
 			print_string("DIR  ", TOS_COLOR_RED);
 		}else{
-			print_string("FILE ", 0x00ff1dce);
+			print_string("FILE ", 0);
 		}
 		print_string(ptr->name, 0x00ff);
 		print_string(" ", 0x0);
@@ -427,7 +442,7 @@ void ls(void)
 		time.year = (curr->ctime >> 40) & 0xFF;
 
 		format_time(&time, timebuf);
-		print_string(timebuf, 0x00ff);
+		print_string(timebuf, 0);
 		print_string(" ", 0);
 		itoa(curr->file_size, buf);
 		print_string(buf, TOS_COLOR_RED);

@@ -16,6 +16,8 @@ typedef unsigned long long uint64_t;
 #define DOWN 0x50
 #define LEFT 0x4B
 #define RIGHT 0x4D
+#define WINDOWS_BUTTON 0x5B
+#define LEFT_CTRL 0x1D
 
 typedef struct {
 	char key_buffer[MAX_KEYS];

@@ -58,6 +58,7 @@ typedef struct {
 #define ATTR_WRITABLE (1 << 4)
 #define ATTR_EXECUTABLE (1 << 5)
 
+#define SPECIFY_DIR ((inode_t*)-2)
 #define FS_FULL -2
 #define DIR_FULL -1
 #define INVALID_PATH -1

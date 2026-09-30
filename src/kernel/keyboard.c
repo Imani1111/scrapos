@@ -67,10 +67,14 @@ void HandleKeyboardInterrupt()
 	
 	if (is_extended){
 		switch(scancode){
-			case 0x5B: {
-				write_key(&key_collector, 0x5B);
+			case WINDOWS_BUTTON: {
+				write_key(&key_collector, WINDOWS_BUTTON);
 				break;
-			}default:
+			}case LEFT_CTRL: {
+				write_key(&key_collector, LEFT_CTRL);
+				break;
+			}		
+			default:
 				   break;
 		}
 		PIC_sendEOI(33);

@@ -6,6 +6,7 @@
 #include <fs.h>
 #include <rtc.h>
 #include <string.h>
+#include <disk_mgr.h>
 
 extern int cursor_x;
 extern int cursor_y;
@@ -62,6 +63,8 @@ void shell_main()
 								print_string("CD failed!: cache error\n", 0x00ff0000);
 							}else if (cd_t == CD_ENF){
 								print_string("CD failed!: entry not found\n", 0x00ff0000);
+							}else if(cd_t == -3){
+								print_string("Specify search start directory", 0x00ff0000);
 							}
 						}
 					}else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"ps") == 0){

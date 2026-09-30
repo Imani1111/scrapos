@@ -268,7 +268,7 @@ void ls_tasks()
 		print_hex(t->esp, TOS_COLOR_RED);
 		print_string(" ", 0);
 		itoa(t->child_count, buf);
-		print_string(buf, 0x00ffff00);
+		print_string(buf, 0);
 		print_string("  ", 0);
 		if (t->state == TASK_RUNNING){
 			print_string("t_run  ", 0x0000ff00);
@@ -279,7 +279,7 @@ void ls_tasks()
 		}else if (t->state == TASK_ZOMBIE){
 			print_string("t_zomb ", 0x00ff0000);
 		}
-		print_string(t->name, 0x00008000);
+		print_string(t->name, 0);
 		print_string("\n", 0);
 
 		t = t->next;

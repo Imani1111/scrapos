@@ -61,8 +61,14 @@ void init_fs()
 	dskrs2(inode_bitmap, inodebm);
 }
 
+void clean_cache()
+{
+	kmemset(&current_dir_cache, 0, sizeof(cwd_cache));
+}
+
 int cache_dir(inode_t* dir)
 {
+	clean_cache();
 	if (dir->inode_no < 0 || dir->inode_no > 512) return -1;
 	if (!(dir->attributes & ATTR_DIRECTORY)) return -1;
 
@@ -241,7 +247,8 @@ void init_directory(inode_t* direntry)
 	
 	direntry->active_extents = 1;
 	direntry->file_size = 512;
-
+	
+	kmemset(temp_dir_buf, 0, sizeof(dirent_t) * MAX_DIR_ENTRIES);
 	dirent_t* dir = (dirent_t*)temp_dir_buf;
 
 	dir[0].inode_no = direntry->inode_no;
@@ -375,6 +382,21 @@ inode_t* fd_dir(const char* path)
 		i++;
 	}
 	return target_inode;
+}
+
+inode_t* fd_file(char* filename){
+	dirent_t* curr_dir = current_dir_cache.entries;
+	int f = 0;
+	for (int i = 0; i < (int)(current_dir_cache.active_extents * DIRENTS_PER_EXT_BLOCK); i++){
+		if (kstrcmp((uint8_t*)curr_dir->name, (uint8_t*)filename) == 0){
+			f = 1;
+			break;
+		}
+		curr_dir++;
+	}
+	if (!f) return ENTRY_NOT_FOUND;
+	inode_t* inodes = (inode_t*)inode_table;
+	return &inodes[curr_dir->inode_no];
 }
 
 void update_cwd_str(char* path)

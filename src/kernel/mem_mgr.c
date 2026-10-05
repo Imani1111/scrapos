@@ -1,6 +1,7 @@
 #include <mem_mgr.h>
 #include <mmap.h>
 #include <screen.h>
+#include <string.h>
 
 static HeapBlockMetaData* heap_start = NULL;
 static HeapBlockMetaData* heap_tail = NULL;
@@ -8,7 +9,6 @@ extern uint32_t first_allocatable_addr;
 HeapBlockMetaData* heap_pointer = NULL;
 uint32_t heap_current = HEAP_START;
 
-// TODO: Fix malloc page fault when a big chunk is requested when i wake up
 void* my_malloc(uint32_t size)
 {
 	if (size == 0) return NULL;
@@ -54,7 +54,10 @@ void* my_malloc(uint32_t size)
 		
 		for (uint32_t i = 0; i < no_of_pages; i++){
 			void* ptr = sbrk(PAGE);
-			if (ptr == SBRK_FAIL) return NULL;
+			if (ptr == SBRK_FAIL){
+				print_string("SBRK FAILED!\n", 0x00ff0000);
+				return NULL;
+			}
 			heap_tail->size += PAGE;
 		}
 		
@@ -64,7 +67,10 @@ void* my_malloc(uint32_t size)
 		
 		for (uint32_t i = 0; i < no_of_pages; i++){
 			void* ptr = sbrk(PAGE);
-			if (ptr == SBRK_FAIL) return NULL;
+			if (ptr == SBRK_FAIL){	
+				print_string("SBRK FAILED!\n", 0x00ff0000);
+				return NULL;
+			}
 		}
 		expansion = (HeapBlockMetaData*)((uint8_t*)heap_tail + sizeof(HeapBlockMetaData) + heap_tail->size);
 		expansion->size = (no_of_pages * PAGE) - sizeof(HeapBlockMetaData);
@@ -114,12 +120,10 @@ void* sbrk(int32_t increment)
 		while (current_block_end < target_block_end){
 			uint32_t phys_addr = pmm_alloc_page();
 			
-			if (!phys_addr){
-				return SBRK_FAIL;
-			}
-
 			uint32_t* addr = (uint32_t*)vmm_map_page(current_block_end, phys_addr, READ_WRITE);
-			if (addr == MAP_FAILED) return SBRK_FAIL;
+			if (addr == MAP_FAILED){
+			       	return SBRK_FAIL;
+			}
 			
 			current_block_end += PAGE;
 		}

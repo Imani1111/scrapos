@@ -7,6 +7,7 @@
 #include <rtc.h>
 #include <string.h>
 #include <disk_mgr.h>
+#include <ted.h>
 
 extern int cursor_x;
 extern int cursor_y;
@@ -14,13 +15,45 @@ extern int cursor_y;
 char* cmd_toks[64];
 char buf[256];
 
+void test1(){
+	Window_t* win = open_window(48, 80, 160, 40, TOS_COLOR_DARK_GRAY, 0x0, 0x00ffffff, "Test-1");
+	reset_cursor_bounds();
+	set_cursor(208, 116);
+	set_cursor_bounds(208, 480, 116, 200);
+	while(1){
+		char c = read_key();
+		if (c == 27){
+			close_window(win);
+			awake_parent(NULL);
+			KillTask(NULL);
+		}
+	}
+}
+
+void test(){
+	Window_t* win = open_window(200, 100, 400, 150, TOS_COLOR_CYAN, 0x0, 0x00ffffff, "Test");
+	reset_cursor_bounds();
+	set_cursor(208, 116);
+	set_cursor_bounds(208, 480, 116, 200);
+	while(1){
+		char c = read_key();
+		if (c == 27){
+			close_window(win);
+			awake_parent(NULL);
+			KillTask(NULL);
+		}else if (c == 's'){
+			SpawnTask(test1, "SHELL");
+			set_task_state(-1, TASK_BLOCKED);
+		}
+	}
+}
 
 void shell_main()
 {	
-	Window_t* win = open_window(100, 80, 400, 300, 0x00A9A9A9, 0x000000ff, 0x0, "Shell");
+	Window_t* win = open_window(80, 20, 480, 360, 0x00ffffff, 0x000000ff, 0x0, "Shell");
 	reset_cursor_bounds();	
-	set_cursor(108, 96);
-	set_cursor_bounds(108, 492, 96, 372);
+	set_cursor(88, 36);
+	set_cursor_bounds(84, 556, 36, 376);
 
 	print_shell_prompt();
 	int ptr = 0;
@@ -69,6 +102,10 @@ void shell_main()
 						}
 					}else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"ps") == 0){
 						ls_tasks();
+					}
+					else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"ted") == 0){
+						SpawnTask(ted_main, "TED");
+						set_task_state(-1, TASK_BLOCKED);
 					}
 					else if (kstrcmp((uint8_t*)cmd_toks[0], (uint8_t*)"exit") == 0){
 						close_window(win);

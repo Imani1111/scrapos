@@ -21,6 +21,19 @@ void kernel_main()
 	clear_screen(0x00ffffff);
 	reset_cursor_bounds();
 
+	draw_rect(0, 448, 640, 32, TOS_COLOR_DARK_GRAY);
+	draw_rect(0, 448, 640, 2, TOS_COLOR_DARK_GRAY);
+	outline_rect(0, 0, 640, 480, 10, TOS_COLOR_CYAN);
+	read_rtc();
+	realtime_t* time = get_current_timestamp();
+	char disp[20];
+	format_time(time, disp);
+
+	print_string_at("SCRAP_OPERATING_SYSTEM", 240, 1, 0x0);
+	print_string_at(disp, 484, 1, 0);
+
+	set_cursor(16, 16);
+	set_cursor_bounds(16, 624, 16, 464);
 	init_fs();
 	init_pmm();
 	init_vmm();

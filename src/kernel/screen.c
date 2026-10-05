@@ -165,8 +165,7 @@ void draw_char(char c, uint32_t color){
 			if (cursor_visible) toggle_cursor(cursor_x, cursor_y);
 			cursor_busy = 0;
 			*/
-			uint32_t horiz = (cursor_bounds.min_x - cursor_x) / 8;
-			move_cursor(horiz, 1);
+			set_cursor(cursor_bounds.min_x, cursor_y + 8);
 			break;
 		}
 		case '\t':{

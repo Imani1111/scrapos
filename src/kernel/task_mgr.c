@@ -10,6 +10,8 @@ TaskControlBlock_t* tail_task = NULL;
 TaskControlBlock_t* current_task = NULL;
 int next_pid = 1;
 
+task_bar_entry tbes[8] = {0};
+
 void kernel_idle_loop(){
 	while(1){
 		asm volatile("hlt");
@@ -219,6 +221,18 @@ void reaper()
 	}
 }
 
+TaskControlBlock_t* get_task_tcb(int pid)
+{
+	TaskControlBlock_t* task = head_task;
+	do {
+		if (task->pid == pid){
+			return task;
+		}
+		task = task->next;
+	}while (task != head_task);
+	return NULL;
+}
+
 void set_task_state(int pid, TaskState state)
 {
 	TaskControlBlock_t* temp = head_task;
@@ -233,6 +247,11 @@ void set_task_state(int pid, TaskState state)
 	do {
 		if (temp->pid == task_pid){
 			temp->state = state;
+			if (state == TASK_BLOCKED){
+				update_task_bar_entry(temp, 0);
+			}else if (state == TASK_READY){
+				update_task_bar_entry(temp, 1);
+			}
 			break;
 		}
 		temp = temp->next;
@@ -252,38 +271,76 @@ void awake_parent(TaskControlBlock_t* task)
 
 void ls_tasks()
 {
-	print_string("PID ", 0x00800080);
-	print_string("ESP_VAL  ", 0x00800080);
-	print_string("CC ", 0x00800080);
-	print_string("STATE ", 0x00800080);
-	print_string("TASK_NAME", 0x00800080);
-	draw_char('\n', 0);
-
 	TaskControlBlock_t* t = head_task;
-	char buf[4];
-	do{
-		itoa(t->pid, buf);
-		print_string(buf, 0x0);
-		print_string(" ", 0);
-		print_hex(t->esp, TOS_COLOR_RED);
-		print_string(" ", 0);
-		itoa(t->child_count, buf);
-		print_string(buf, 0);
-		print_string("  ", 0);
-		if (t->state == TASK_RUNNING){
-			print_string("t_run  ", 0x0000ff00);
-		}else if (t->state == TASK_READY){
-			print_string("t_rdy  ", 0x00ff);
-		}else if (t->state == TASK_BLOCKED){
-			print_string("t_blkd ", 0x00ffff00);
-		}else if (t->state == TASK_ZOMBIE){
-			print_string("t_zomb ", 0x00ff0000);
-		}
-		print_string(t->name, 0);
-		print_string("\n", 0);
+	print_string("\nGREEN", 0x0000AA00);
+	print_string("-> TASK THAT YOU ARE CURRENTLY INTERACTING WITH\n", 0);
+	print_string("RED", 0x00ff0000);
+	print_string("-> BLOCKED TASKS(not running until unblocked)\n", 0);
+	print_string("BLUE", 0x00ff);
+	print_string("-> BACKGROUND TASKS\n", 0);
+	print_string("\n", 0);
+	print_string("---------------------------------------------------------\n", 0x0);
 
+	do{
+		draw_char('|', 0x0);
+		if (t->state == TASK_RUNNING){
+			print_string(t->name, 0x0000AA00);
+		}else if(t->state == TASK_READY){
+			print_string(t->name, 0x00ff);
+		}else if(t->state == TASK_BLOCKED){
+			print_string(t->name, 0x00ff0000);
+		}
+		print_string("->{", 0x0);
+		print_string("ESP: [", 0x00ff);
+		print_hex(t->esp, 0x00ff0000);
+		print_string("], ", 0x00ff);
+		print_string("EBP: [", 0x00ff);
+		print_hex((uint32_t)t->base, 0x00ff0000);
+		print_string("]", 0x00ff);
+		print_string("}\n", 0x0);
 		t = t->next;
 	}while (t != NULL && t != head_task);
+	print_string("----------------------------------------------------------\n", 0);
+	draw_char('\n', 0);
 }
 
+void create_task_bar_entry(TaskControlBlock_t* task)
+{
+	task_bar_entry* t = tbes;
+	int idx = -1;
+	for (int i = 0; i < 8; i++){
+		if (t[i].pid == 0){
+			idx = i;
+			break;
+		}
+	}
+	if (idx == -1) return;
+	t[idx].pid = task->pid;
+	t[idx].w = (kstrlen(task->name) * 8) + 16;
+	t[idx].sx = t[idx - 1].sx + t[idx - 1].w + 8;
+	draw_rect(t[idx].sx, 450, t[idx].w, 16, TOS_COLOR_CYAN);
+	outline_rect(t[idx].sx, 450, t[idx].w, 16, 2, 0x0000ff00);
+	print_string_at(task->name, t[idx].sx + 8, 455, 0);
+}
+
+void update_task_bar_entry(TaskControlBlock_t* task, int state)
+{
+	task_bar_entry* t = tbes;
+	int idx= -1;
+	for (int i = 0; i < 8; i++){
+		if (t[i].pid == task->pid){
+			idx = i;
+			break;
+		}
+	}
+	if (idx == -1) return;
+	if (state == 0){
+		outline_rect(t[idx].sx, 450, t[idx].w, 16, 2, 0x00ff0000);
+	}else if (state == -1){
+		draw_rect(t[idx].sx, 450, t[idx].w, 16, TOS_COLOR_DARK_GRAY);
+		t[idx].pid = 0;
+	}else if (state == 1){
+		outline_rect(t[idx].sx, 450, t[idx].w, 16, 2, 0x0000ff00);
+	}
+}
 

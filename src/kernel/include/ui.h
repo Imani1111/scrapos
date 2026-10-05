@@ -18,11 +18,6 @@ typedef unsigned long long uint64_t;
 #define ACTIVE_TITLE_BAR    0x000080
 #define INACTIVE_TITLE_BAR  0x808080
 
-#define MAX_WINDOW_DEPTH 4
-#define SIZE_OF_MAX_WINDOW (400*300*3)
-
-#define OCCUPIED 1
-
 typedef struct Window{
 	uint32_t x;
 	uint32_t y;
@@ -31,16 +26,14 @@ typedef struct Window{
 	uint32_t bg;
 	uint32_t fc;
 	uint32_t tc;
-	const char* name;
+	const char name[16];
 	int pid;
-	uint8_t vault[SIZE_OF_MAX_WINDOW];
-	int win_idx;
-	int winspace;
+	uint8_t* vault;
 	Cursor_bounds cb;
 	cursor_pos_t cpos;
+	struct Window* next;
+	struct Window* prev;
 }Window_t;
-
-extern Window_t windows[MAX_WINDOW_DEPTH];
 
 void draw_rect(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint32_t color);
 void outline_rect(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint8_t outline_thickness, uint32_t color);
@@ -48,14 +41,11 @@ void draw_active_title_bar(Window_t* win);
 void draw_inactive_title_bar(Window_t* win);
 
 Window_t* create_window(uint32_t x, uint32_t y, uint16_t width, uint16_t height, uint32_t window_color, uint32_t frame_color, uint32_t title_color, const char* title);
+void draw_window(Window_t* win);
 void take_snapshot(Window_t* win);
 void redraw_snapshot(Window_t* win);
 Window_t* open_window(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint32_t bg, uint32_t fc, uint32_t tc, const char* t);
 void close_window(Window_t* win);
-void bring_to_top(Window_t* win);
-void draw_reordered(void);
-void focus_window(Window_t* win);
-void cycle_win();
-void InitDesktop(void);
-void start_menu(void);
+
+
 #endif

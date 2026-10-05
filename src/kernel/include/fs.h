@@ -29,6 +29,7 @@ typedef struct {
 #define EXTENT_COUNT 8
 #define MAX_DIR_ENTRIES 128
 #define MAX_LENGTH 28
+
 typedef struct {
 	uint32_t inode_no;
 	uint32_t file_size;
@@ -43,6 +44,8 @@ typedef struct {
 	char name[MAX_LENGTH];
 	uint32_t inode_no;
 }dirent_t;
+
+#define DIRENTS_PER_EXT_BLOCK (512 / 32)
 
 typedef struct {
 	uint32_t active_extents;
@@ -72,6 +75,7 @@ int create_entry(const char* name, uint32_t attributes);
 int cache_dir(inode_t* dir);
 void grab_dir(inode_t* dir);
 inode_t* fd_dir(const char* name);
+inode_t* fd_file(char* name);
 int cd(char* path);
 void ls(void);
 inode_t* resolve_dir_path(char* path);

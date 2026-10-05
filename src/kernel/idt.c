@@ -87,7 +87,7 @@ void init_idt(){
 		CreateIDTEntry(&idt[i], 0, 0, 0);
 	}
 	
-	CreateIDTEntry(&idt[13], (uint32_t)isr13, GDT_CODE_SEGMENT, IDT_FLAG_INTERRUPT_GATE);	
+	//CreateIDTEntry(&idt[13], (uint32_t)isr13, GDT_CODE_SEGMENT, IDT_FLAG_INTERRUPT_GATE);	
 	CreateIDTEntry(&idt[33], (uint32_t)isr33, GDT_CODE_SEGMENT, IDT_FLAG_INTERRUPT_GATE);
 	CreateIDTEntry(&idt[32], (uint32_t)isr32, GDT_CODE_SEGMENT, IDT_FLAG_INTERRUPT_GATE);
 

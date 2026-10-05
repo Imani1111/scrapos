@@ -101,3 +101,19 @@ int kstrtok(char delim, char* str, char** token_arr, int token_count)
 	}
 	return tc;
 }
+
+void* kmemmove(void* dest, void* src, int size){
+	if (size == 0 || dest == src) return dest;
+	uint8_t* d = (uint8_t*)dest;
+	uint8_t* s = (uint8_t*)src;
+
+	if (d < s){
+		kmemcpy(d, s, size);
+	}
+	else{
+		for (int i = size - 1; i > 0; i--){
+			d[i] = s[i];
+		}
+	}
+	return dest;
+}

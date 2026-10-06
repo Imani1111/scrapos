@@ -2,12 +2,16 @@
 #include <mmap.h>
 #include <screen.h>
 #include <string.h>
+#include <ui.h>
+#include <pit.h>
 
 static HeapBlockMetaData* heap_start = NULL;
 static HeapBlockMetaData* heap_tail = NULL;
 extern uint32_t first_allocatable_addr;
 HeapBlockMetaData* heap_pointer = NULL;
 uint32_t heap_current = HEAP_START;
+
+int wait_time = 0;
 
 void* my_malloc(uint32_t size)
 {
@@ -88,7 +92,6 @@ void my_free(void* ptr)
 	if (!ptr) return;
 		
 	HeapBlockMetaData* block = (HeapBlockMetaData*)((uint8_t*)ptr - sizeof(HeapBlockMetaData));
-	if ((uint32_t)block < HEAP_START || (uint32_t)block > HEAP_END) return; // Out of bound ram address detected!
 	if (block->is_free) return; // Double free detected!
 	
 	block->is_free = BLOCK_FREE;
@@ -130,4 +133,52 @@ void* sbrk(int32_t increment)
 	}
 	heap_current = new;
 	return (void*)old;
+}
+
+void draw_current_heap_data(){
+	draw_rect(330, 20, 292, 70, 0x00ffffff);
+	print_string_at("SBRK position: ", 330, 20, 0x00ff);
+	print_hex_at(heap_current, 450, 20, 0x0000aa00);
+
+	int total_space = heap_current - HEAP_START;
+	char buf[10];
+	itoa(total_space, buf);
+	int len = kstrlen(buf);
+	print_string_at("Current heap size: ", 330, 28, 0x00ff);
+	print_string_at(buf, 482, 28, 0x00ff0000);
+	print_string_at("Bytes", 482 + (len * 8), 28, 0);
+			
+	int free_chunks_total_bytes = 0;
+	HeapBlockMetaData* t = heap_start;
+	do {
+		if (t->is_free){
+			free_chunks_total_bytes += t->size;
+		}
+		t = t->next;
+	}while(t != heap_start);
+			
+	itoa(free_chunks_total_bytes, buf);
+	len = kstrlen(buf);
+	print_string_at("Free: ", 330, 36, 0x00ff);
+	print_string_at(buf, 378, 36, 0x0000aa00);
+	print_string_at("Bytes", 378 + (len * 8), 36, 0x0);
+	print_string_at("Heap pointer: ", 330, 44, 0x00ff);
+	print_hex_at((uint32_t)heap_pointer, 442, 44, 0x0000aa00);
+}
+
+void display_heap_data(){
+	draw_rect(326, 12, 300, 80, 0x00ffffff);
+	outline_rect(326, 12, 300, 80, 3, 0x00ff);
+	draw_rect(440, 10, 64, 10, 0x00ff);
+	print_string_at("MEM_INSP", 440, 12, 0x00ffffff);
+	
+	draw_current_heap_data();
+	while(1){
+		wait_time++;
+		if ((wait_time % 50) == 0){ 
+			draw_current_heap_data();
+		}else{
+			yield();
+		}
+	}
 }

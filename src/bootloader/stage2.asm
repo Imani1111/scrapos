@@ -139,7 +139,7 @@ init32mode:
 MoveKernelto0x100000:
 	mov esi, 0x50000
 	mov edi, 0x100000
-	mov ecx, 8192
+	mov ecx, 16384
 	
 	cld
 	rep movsd
@@ -157,7 +157,7 @@ print:
 dap:
 	db 0x10
 	db 0
-	dw 64
+	dw 128
 	dw 0x0000
 	dw 0x5000
 	dq 10

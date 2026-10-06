@@ -50,10 +50,10 @@ void test(){
 
 void shell_main()
 {	
-	Window_t* win = open_window(80, 20, 480, 360, 0x00ffffff, 0x000000ff, 0x0, "Shell");
+	Window_t* win = open_window(20, 100, 400, 300, 0x00ffffff, 0x000000ff, 0x0, "Shell");
 	reset_cursor_bounds();	
-	set_cursor(88, 36);
-	set_cursor_bounds(84, 556, 36, 376);
+	set_cursor(24, 124);
+	set_cursor_bounds(24, 416, 124, 396);
 
 	print_shell_prompt();
 	int ptr = 0;

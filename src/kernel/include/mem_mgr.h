@@ -13,7 +13,6 @@ typedef signed int int32_t;
 #define BLOCK_OCCUPIED 0
 #define SBRK_FAIL ((void*)-1)
 #define HEAP_START 0x400000
-#define HEAP_END 0xFFE0000
 
 typedef struct HeapBlock{
 	uint32_t size;
@@ -25,4 +24,5 @@ typedef struct HeapBlock{
 void* my_malloc(uint32_t size_in_bytes);
 void my_free(void* ptr);
 void* sbrk(int32_t increment);
+void display_heap_data(void);
 #endif

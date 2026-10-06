@@ -10,8 +10,6 @@ TaskControlBlock_t* tail_task = NULL;
 TaskControlBlock_t* current_task = NULL;
 int next_pid = 1;
 
-task_bar_entry tbes[8] = {0};
-
 void kernel_idle_loop(){
 	while(1){
 		asm volatile("hlt");
@@ -243,23 +241,24 @@ void set_task_state(int pid, TaskState state)
 	else{
 		task_pid = pid;
 	}
-
 	do {
 		if (temp->pid == task_pid){
 			temp->state = state;
-			if (state == TASK_BLOCKED){
-				update_task_bar_entry(temp, 0);
-			}else if (state == TASK_READY){
-				update_task_bar_entry(temp, 1);
-			}
 			break;
 		}
 		temp = temp->next;
 	}while(temp != head_task);
 }
 
+void block_parent(){
+	asm volatile("cli");
+	set_task_state(current_task->parent_pid, TASK_BLOCKED);
+	asm volatile("sti");
+}
+
 void awake_parent(TaskControlBlock_t* task)
 {
+	asm volatile("cli");
 	int parent_pid;
 	if (task == NULL){
 		parent_pid = current_task->parent_pid;
@@ -267,6 +266,7 @@ void awake_parent(TaskControlBlock_t* task)
 		parent_pid = task->parent_pid;
 	}
 	set_task_state(parent_pid, TASK_READY);
+	asm volatile("sti");
 }
 
 void ls_tasks()
@@ -302,45 +302,5 @@ void ls_tasks()
 	}while (t != NULL && t != head_task);
 	print_string("----------------------------------------------------------\n", 0);
 	draw_char('\n', 0);
-}
-
-void create_task_bar_entry(TaskControlBlock_t* task)
-{
-	task_bar_entry* t = tbes;
-	int idx = -1;
-	for (int i = 0; i < 8; i++){
-		if (t[i].pid == 0){
-			idx = i;
-			break;
-		}
-	}
-	if (idx == -1) return;
-	t[idx].pid = task->pid;
-	t[idx].w = (kstrlen(task->name) * 8) + 16;
-	t[idx].sx = t[idx - 1].sx + t[idx - 1].w + 8;
-	draw_rect(t[idx].sx, 450, t[idx].w, 16, TOS_COLOR_CYAN);
-	outline_rect(t[idx].sx, 450, t[idx].w, 16, 2, 0x0000ff00);
-	print_string_at(task->name, t[idx].sx + 8, 455, 0);
-}
-
-void update_task_bar_entry(TaskControlBlock_t* task, int state)
-{
-	task_bar_entry* t = tbes;
-	int idx= -1;
-	for (int i = 0; i < 8; i++){
-		if (t[i].pid == task->pid){
-			idx = i;
-			break;
-		}
-	}
-	if (idx == -1) return;
-	if (state == 0){
-		outline_rect(t[idx].sx, 450, t[idx].w, 16, 2, 0x00ff0000);
-	}else if (state == -1){
-		draw_rect(t[idx].sx, 450, t[idx].w, 16, TOS_COLOR_DARK_GRAY);
-		t[idx].pid = 0;
-	}else if (state == 1){
-		outline_rect(t[idx].sx, 450, t[idx].w, 16, 2, 0x0000ff00);
-	}
 }
 

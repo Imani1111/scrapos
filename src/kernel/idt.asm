@@ -6,6 +6,7 @@ extern HandleKeyboardInterrupt
 global isr32
 extern PITInterruptHandler
 extern Schedule
+extern log_cpu_state
 
 ;global isr13
 ;extern gp_fault
@@ -28,6 +29,7 @@ isr32:
 	pushad
 	call PITInterruptHandler
 	push esp
+	call log_cpu_state
 	call Schedule
 	add esp, 4
 	mov esp, eax

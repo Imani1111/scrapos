@@ -174,6 +174,9 @@ void draw_char(char c, uint32_t color){
 		default: {
 			cursor_busy = 1;
 			if (cursor_visible) toggle_cursor(cursor_x, cursor_y);
+			if (cursor_x >= cursor_bounds.max_x){
+				set_cursor(cursor_bounds.min_x, cursor_y + 8);
+			}
 			draw_char_at(c, cursor_x, cursor_y, color);
 			cursor_x += 8;
 			if (cursor_visible) toggle_cursor(cursor_x, cursor_y);
@@ -200,8 +203,23 @@ void print_string(const char* str, uint32_t color){
 	}
 }
 
-void print_hex(uint32_t val, uint32_t color)
+void print_hex_at(uint32_t val, uint32_t x, uint32_t y, uint32_t color)
 {
+	char hex_chars[] = "0123456789ABCDEF";
+	char buf[8];
+	for (int i = 7; i >= 0; i--){
+		buf[i] = hex_chars[val & 0xF];
+		val >>= 4;
+	}
+	draw_char_at('0', x, y, color);
+	draw_char_at('x', x + 8, y, color);
+	int k = 2;
+	for (int i = 0; i < 8; i++){
+		draw_char_at(buf[i], x + ((k + i) * 8), y, color);
+	}
+}
+
+void print_hex(uint32_t val, uint32_t color){
 	char hex_chars[] = "0123456789ABCDEF";
 	char buf[8];
 	for (int i = 7; i >= 0; i--){

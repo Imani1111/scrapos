@@ -34,11 +34,8 @@ typedef struct TaskControlBlock {
 }TaskControlBlock_t;
 
 typedef struct {
-	int pid;
-	int sx;
-	int w;
-	TaskState state;
-}task_bar_entry;
+
+}cpu_logs;
 
 extern TaskControlBlock_t* head_task;
 extern TaskControlBlock_t* tail_task;
@@ -52,9 +49,8 @@ uint32_t Schedule(uint32_t current_esp);
 void KillTask(TaskControlBlock_t* task);
 void set_task_state(int pid, TaskState state);
 void reaper(void);
+void block_parent(void);
 void awake_parent(TaskControlBlock_t* task);
 void ls_tasks(void);
 TaskControlBlock_t* get_task_tcb(int pid);
-void create_task_bar_entry(TaskControlBlock_t* task);
-void update_task_bar_entry(TaskControlBlock_t* task, int state);
 #endif

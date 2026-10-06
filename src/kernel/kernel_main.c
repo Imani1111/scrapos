@@ -20,16 +20,27 @@ void kernel_main()
 	asm volatile("cli");
 	clear_screen(0x00ffffff);
 	reset_cursor_bounds();
-
-	draw_rect(0, 448, 640, 32, TOS_COLOR_DARK_GRAY);
-	draw_rect(0, 448, 640, 2, TOS_COLOR_DARK_GRAY);
+	
 	outline_rect(0, 0, 640, 480, 10, TOS_COLOR_CYAN);
+	draw_rect(322, 10, 2, 438, 0x0);
+	draw_rect(250, 440, 88, 10, 0x00ff);
+	outline_rect(10, 448, 620, 32, 2, 0x00ff);
+	print_string_at("STATUS_BAR", 254, 442, 0x00ffffff);
+	
+	draw_rect(326, 12, 300, 80, 0x00ffffff);
+	outline_rect(326, 12, 300, 80, 3, 0x00ff);
+	draw_rect(440, 10, 64, 10, 0x00ff);
+	print_string_at("MEM_INSP", 440, 12, 0x00ffffff);
+
+	outline_rect(326, 96, 300, 344, 3, 0x00ff);
+	draw_rect(424, 94, 94, 14, 0x00ff);
+	print_string_at("APPLAUNCHER", 426, 98, 0x00ffffff);
+
 	read_rtc();
 	realtime_t* time = get_current_timestamp();
 	char disp[20];
 	format_time(time, disp);
 
-	print_string_at("SCRAP_OPERATING_SYSTEM", 240, 1, 0x0);
 	print_string_at(disp, 484, 1, 0);
 
 	set_cursor(16, 16);
@@ -40,6 +51,7 @@ void kernel_main()
 	
 	init_multitasking();
 	SpawnTask(reaper, "TaskReaper");
+	SpawnTask(display_heap_data, "MEM_INSP");
 	SpawnTask(app_launcher, "AppLauncher");
 		
 	init_pit(100);

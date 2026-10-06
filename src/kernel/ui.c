@@ -56,7 +56,7 @@ Window_t* create_window(uint32_t x, uint32_t y, uint16_t width, uint16_t height,
 	new_win->bg = window_color;
 	new_win->fc = frame_color;
 	new_win->tc = title_color;
-	kstrcpy(new_win->name, title);
+	kstrcpy((char*)new_win->name, title);
 	new_win->pid = current_task->pid;
 	new_win->vault = my_malloc(new_win->w * new_win->h * 3);
 	if (new_win->vault == NULL) return NULL;
@@ -83,7 +83,7 @@ void draw_window(Window_t* win)
 {
 	draw_rect(win->x, win->y, win->w, win->h, win->bg);
 	outline_rect(win->x, win->y, win->w, win->h, 4, win->fc);
-	int len = kstrlen(win->name);
+	int len = kstrlen((char*)win->name);
 	draw_rect(win->x, win->y, len * 8, 16, win->fc);
 	print_string_at(win->name, win->x, win->y + 4, 0x0000ff00);
 }
@@ -130,18 +130,18 @@ Window_t* open_window(uint32_t x, uint32_t y, uint16_t w, uint16_t h, uint32_t b
 
 	take_snapshot(win);
 	draw_window(win);
-	TaskControlBlock_t* window_task = get_task_tcb(win->pid);
-	create_task_bar_entry(window_task);
 	return win;
 }
 
 void close_window(Window_t* win)
 {
 	redraw_snapshot(win);
-	TaskControlBlock_t* window_task = get_task_tcb(win->pid);
-	update_task_bar_entry(window_task, -1);
 	restore_cursor(&win->cb, &win->cpos);
-
+	win->prev->next = win->next;
+	win->next->prev = win->prev;
+	if (top_window == win) top_window = win->prev;
+	if (bottom_window == win) bottom_window = win->next;
+		
 	my_free(win->vault);
 	my_free(win);
 }

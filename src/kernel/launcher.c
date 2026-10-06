@@ -12,11 +12,10 @@
 
 void app_launcher(void)
 {	
-	Window_t* win = open_window(300, 40, 320, 200, 0x0, TOS_COLOR_RED, 0x00ffffff, "APPLAUNCHER");
-	set_cursor(308, 56);
-	set_cursor_bounds(308, 620, 48, 240);
+	set_cursor(338, 108);
+	set_cursor_bounds(334, 620, 96, 432);
 
-	print_string("ALCH$", 0x0000ffff);
+	print_string("ALCH$", 0x00ff);
 	char buf[32] = {0};
 	int i = 0;
 	while(1){
@@ -39,14 +38,14 @@ void app_launcher(void)
 					}
 					i = 0;
 					kmemset(buf, 0, sizeof(buf));
-					print_string("ALCH$", 0x0000ffff);
+					print_string("ALCH$", 0x00ff);
 					break;
 				case '\b':
 					if (i == 0) continue;
 					break;
 				default:
 					if (i > 31) continue;
-					draw_char(c, 0x00ffffff);
+					draw_char(c, 0x0);
 					buf[i++] = c;
 					break;
 			}
